@@ -21,7 +21,7 @@ function getCssSelector(el) {
 
   // 2 Use a data-testid attribute
   if (el.hasAttribute("data-testid")) {
-    return `[data-testid=${el.getAttribute("data-testid")}"]`;
+    return `[data-testid="${el.getAttribute("data-testid")}"]`;
   }
 
   // 3 Fallback to constructing a path from the element up to the body
@@ -63,6 +63,7 @@ function getCssSelector(el) {
     // Move up to the next parent element and repeat the process.
     el = el.parentNode;
   }
+  return path.join(" > ");
 }
 
 /**
@@ -96,19 +97,19 @@ function getXPath(el) {
       ix++;
     }
   }
+}
 
-  /**
-   * Copies the given text to the user's clipboard using the modern Navigator API.
-   * @param {string} text The text to copy.
-   */
-  function copyToClipboard(text) {
-    navigator.clipboard
-      .writeText(text)
-      .then(() => {
-        console.log("Selector scout: Copied to clipboard:", text);
-      })
-      .catch((err) => {
-        console.log("Selector scout: Failed to copy text: ", err);
-      });
-  }
+/**
+ * Copies the given text to the user's clipboard using the modern Navigator API.
+ * @param {string} text The text to copy.
+ */
+function copyToClipboard(text) {
+  navigator.clipboard
+    .writeText(text)
+    .then(() => {
+      console.log("Selector scout: Copied to clipboard:", text);
+    })
+    .catch((err) => {
+      console.log("Selector scout: Failed to copy text: ", err);
+    });
 }
