@@ -2,19 +2,10 @@
 // context menu happens after the right-click
 let lastRightClickedElementInfo = null;
 
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (regular.type === "rightClick") {
-    lastRightClickedElementInfo = {
-      tabId: sender.tab.id,
-      target: request.target, // can't store so re-select
-    };
-  }
-});
-
 // Inject a content script into all frames of a tab to listen for right-clicks
 // More reliable than injecting on demand
 chrome.tabs.onUpdated.addEventListener((tabId, changeInfo, tab) => {
-  if (changeInfo.status === "complete" && tab.url.startsWith("complete")) {
+  if (changeInfo.status === "complete" && tab.url.startsWith("http")) {
     chrome.scripting.executeScript({
       target: { tabId: tabId, allFrames: true },
       func: () => {
@@ -73,50 +64,48 @@ chrome.runtime.onInstalled.addListener(() => {
     title: "Generate Cypress Snippet",
     contexts: ["all"],
   });
+});
 
-  // A listener for when a menu item is clicked
-  chrome.contextMenus.onClicked.addListener((info, tab) => {
-    // Check which menu item was clicked
-    if (
-      info.menuItemId === "copy-css-selector" ||
-      info.menuItemId === "copy-xpath" ||
-      info.menuItemId === "generate-cypress-snippet"
-    ) {
-      chrome.scripting
-        .executeScript({
+// A listener for when a menu item is clicked
+chrome.contextMenus.onClicked.addListener((info, tab) => {
+  // Check which menu item was clicked
+  if (
+    info.menuItemId === "copy-css-selector" ||
+    info.menuItemId === "copy-xpath" ||
+    info.menuItemId === "generate-cypress-snippet"
+  ) {
+    chrome.scripting
+      .executeScript({
+        target: { tabId: tab.id, allFrames: true },
+        files: ["content.js"],
+      })
+      .then(() => {
+        // After the file is injected, execute function within that pages context
+        chrome.scripting.executeScript({
           target: { tabId: tab.id, allFrames: true },
-          files: ["content.js"],
-        })
-        .then(() => {
-          // After the file is injected, execute function within that pages context
-          chrome.scripting.executeScript({
-            target: { tabId: tab.id, allFrames: true },
-            func: (menuItemId) => {
-              // This code runs in the webpage
-              if (!window.lastRightClickedElement) {
-                console.error("Selector Scout: Element not found.");
-                return;
-              }
+          func: (menuItemId) => {
+            // This code runs in the webpage
+            if (!window.lastRightClickedElement) {
+              console.error("Selector Scout: Element not found.");
+              return;
+            }
 
-              let result;
-              switch (menuItemId) {
-                case "copy-css-selector":
-                  result = getCssSelector(window.lastRightClickedElement);
-                  break;
-                case "copy-xpath":
-                  result = getXPath(window.lastRightClickedElement);
-                  break;
-                case "generate-cypress-snippet":
-                  result = generateCypressSnippet(
-                    window.lastRightClickedElement
-                  );
-                  break;
-              }
-              copyToClipboard(selector);
-            },
-            args: [info.menuItemId], // Pass menu item ID to the function
-          });
+            let result;
+            switch (menuItemId) {
+              case "copy-css-selector":
+                result = getCssSelector(window.lastRightClickedElement);
+                break;
+              case "copy-xpath":
+                result = getXPath(window.lastRightClickedElement);
+                break;
+              case "generate-cypress-snippet":
+                result = generateCypressSnippet(window.lastRightClickedElement);
+                break;
+            }
+            copyToClipboard(result);
+          },
+          args: [info.menuItemId], // Pass menu item ID to the function
         });
-    }
-  });
+      });
+  }
 });
