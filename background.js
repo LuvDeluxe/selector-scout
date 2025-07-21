@@ -58,12 +58,29 @@ chrome.runtime.onInstalled.addListener(() => {
     contexts: ["all"],
   });
 
+  // Add separator for visual organization
+  chrome.contextMenus.create({
+    id: "separator-1",
+    parentId: "selector-scout-parent",
+    type: "separator",
+    contexts: ["all"],
+  });
+
+  // Add the menu item for generating a Cypress snippet
+  chrome.contextMenus.create({
+    id: "generate-cypress-snippet",
+    parentId: "selector-scout-parent",
+    title: "Generate Cypress Snippet",
+    contexts: ["all"],
+  });
+
   // A listener for when a menu item is clicked
   chrome.contextMenus.onClicked.addListener((info, tab) => {
     // Check which menu item was clicked
     if (
       info.menuItemId === "copy-css-selector" ||
-      info.menuItemId === "copy-xpath"
+      info.menuItemId === "copy-xpath" ||
+      info.menuItemId === "generate-cypress-snippet"
     ) {
       chrome.scripting
         .executeScript({
@@ -80,11 +97,20 @@ chrome.runtime.onInstalled.addListener(() => {
                 console.error("Selector Scout: Element not found.");
                 return;
               }
-              let selector;
-              if (menuItemId === "copy-css-selector") {
-                selector = getCssSelector(window.lastRightClickedElement);
-              } else {
-                selector = getXPath(window.lastRightClickedElement);
+
+              let result;
+              switch (menuItemId) {
+                case "copy-css-selector":
+                  result = getCssSelector(window.lastRightClickedElement);
+                  break;
+                case "copy-xpath":
+                  result = getXPath(window.lastRightClickedElement);
+                  break;
+                case "generate-cypress-snippet":
+                  result = generateCypressSnippet(
+                    window.lastRightClickedElement
+                  );
+                  break;
               }
               copyToClipboard(selector);
             },
