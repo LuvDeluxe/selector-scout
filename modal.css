@@ -1,0 +1,101 @@
+/* Modal dialogs CSS */
+
+/* Main Container */
+#selector-scout-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2147483647;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+    Arial, sans-serif;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Dark overlay behind modal content */
+#selector-scout-modal .ssm-overlay {
+  position: aboslute;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(5px);
+}
+
+/* Actual content box of the modal */
+#selector-scout-modal .ssm-content {
+  position: relative;
+  width: 90%;
+  max-width: 550px;
+  background: #2c2c2e;
+  color: #fff;
+  border-radius: 12px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+  border: 1px solid #4a4a4a;
+  overflow: hidden;
+}
+
+/* Header section of the modal */
+#selector-scout-modal .ssm-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 20px;
+  background: #333;
+  border-bottom: 1px solid #4a4a4a;
+}
+
+#selector-scout-modal .ssm-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+/* Close button in the header */
+#selector-scout-modal #ssm-close {
+  background: none;
+  border: none;
+  color: #aaa;
+  font-size: 28px;
+  font-weight: bold;
+  cursor: pointer;
+  padding: 0 8px;
+  line-height: 1;
+  transition: color 0.2s ease;
+}
+
+#selector-scout-modal #ssm-close:hover {
+  color: #fff;
+}
+
+/* The body of the modal which will contain list of suggestions */
+#selector-scout-modal .ssm-body ul {
+  list-style: none;
+  padding: 8px 0;
+  margin: 0;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+/* Individual list items */
+#selector-scout-modal .ssm-body li {
+  padding: 14px 20px;
+  cursor: pointer;
+  transition: background-color 0.2 ease, color 0.2s ease;
+  border-bottom: 1px solid #3a3a3a;
+  font-family: "SF Mono", "Consolas", "Menlo", monospace;
+  font-size: 14px;
+  white-space: pre;
+}
+
+#selector-scout-modal .ssm-body li:last-child {
+  border-bottom: none;
+}
+
+#selector-scout-modal .ssm-body li:hover {
+  background: #007aff;
+  color: white;
+}
