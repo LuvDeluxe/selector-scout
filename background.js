@@ -46,28 +46,6 @@ chrome.runtime.onInstalled.addListener(() => {
   });
 });
 
-// Inject a content script into all frames of a tab to listen for right-clicks
-// More reliable than injecting on demand
-chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  if (changeInfo.status === "complete" && tab.url.startsWith("http")) {
-    chrome.scripting.executeScript({
-      target: { tabId: tabId, allFrames: true },
-      func: () => {
-        document.addEventListener(
-          "contextmenu",
-          (event) => {
-            // When a right-click happens, send a message to the background script.
-            // Can't send the element directly, so have to re-identify it later.
-            // For now, just set a global variable in the page.
-            window.lastRightClickedElement = event.target;
-          },
-          true,
-        );
-      },
-    });
-  }
-});
-
 // A listener for when a menu item is clicked
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   // Check if clicked item is one of ours

@@ -1,4 +1,15 @@
 /**
+ * Add a listener to the whole document that waits for a contextmenu event
+ */
+document.addEventListener(
+  "contextmenu",
+  (event) => {
+    window.lastRightClickedElement = event.target;
+  },
+  true,
+);
+
+/**
   Mailbox for content script
   Sets up a listener that runs the callback function every time a message
   is sent to this tab.
