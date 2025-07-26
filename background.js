@@ -54,7 +54,7 @@ chrome.tabs.onUpdated.addEventListener((tabId, changeInfo, tab) => {
             // For now, just set a global variable in the page.
             window.lastRightClickedElement = event.target;
           },
-          true
+          true,
         );
       },
     });
