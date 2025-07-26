@@ -1,5 +1,5 @@
 // Runs once the extension is installed or updated
-chrome.runtime.onInstalled.addEventListener(() => {
+chrome.runtime.onInstalled.addListener(() => {
   // Parent menu item
   chrome.contextMenus.create({
     id: "selector-scout-parent",
@@ -41,7 +41,7 @@ chrome.runtime.onInstalled.addEventListener(() => {
 
 // Inject a content script into all frames of a tab to listen for right-clicks
 // More reliable than injecting on demand
-chrome.tabs.onUpdated.addEventListener((tabId, changeInfo, tab) => {
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (changeInfo.status === "complete" && tab.url.startsWith("http")) {
     chrome.scripting.executeScript({
       target: { tabId: tabId, allFrames: true },
