@@ -37,6 +37,13 @@ chrome.runtime.onInstalled.addListener(() => {
     title: "Generate Cypress snippet...",
     contexts: ["all"],
   });
+
+  chrome.contextMenus.create({
+    id: "generate-playwright-snippet",
+    parentId: "selector-scout-parent",
+    title: "Generate Playwright Snippet...",
+    contexts: ["all"],
+  });
 });
 
 // Inject a content script into all frames of a tab to listen for right-clicks
