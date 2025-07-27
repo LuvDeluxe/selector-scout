@@ -6,7 +6,7 @@ document.addEventListener(
   (event) => {
     window.lastRightClickedElement = event.target;
   },
-  true,
+  true
 );
 
 /**
@@ -66,7 +66,7 @@ function generateCypressAssertions(el) {
     suggestions.push({
       display: `.should('have.attr', 'href', ...)`,
       code: `${base}.should('have.attr', 'href', '${el.getAttribute(
-        "href",
+        "href"
       )}');`,
     });
   }
@@ -126,8 +126,8 @@ function showModal(title, items) {
                   .map(
                     (item) =>
                       `<li data-code="${escapeHTML(item.code)}">${escapeHTML(
-                        item.display,
-                      )}</li>`,
+                        item.display
+                      )}</li>`
                   )
                   .join("")}
             </ul>
@@ -194,7 +194,7 @@ function getCssSelector(el) {
     // to distinguish the element from its brothers and sisters
     const siblings = Array.from(el.parentNode.children);
     const sameTagSiblings = siblings.filter(
-      (sibling) => sibling.nodeName.toLowerCase() === el.nodeName.toLowerCase(),
+      (sibling) => sibling.nodeName.toLowerCase() === el.nodeName.toLowerCase()
     );
     if (sameTagSiblings.length > 1) {
       const index = sameTagSiblings.indexOf(el) + 1;

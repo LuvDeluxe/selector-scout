@@ -3,7 +3,11 @@
   "name": "Selector Scout",
   "version": "0.1.0",
   "description": "Right-click any element to copy selectors, generate test snippets, and check accessibility.",
-  "permissions": ["contextMenus", "activeTab", "scripting"],
+  "permissions": [
+    "contextMenus",
+    "activeTab",
+    "scripting"
+  ],
   "background": {
     "service_worker": "background.js"
   },
@@ -14,14 +18,22 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["modal.css"],
-      "matches": ["<all_urls>"]
+      "resources": [
+        "modal.css"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
     }
   ],
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
-      "js": ["content.js"],
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "content.js"
+      ],
       "all_frames": true
     }
   ]
