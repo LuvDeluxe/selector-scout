@@ -44,6 +44,22 @@ chrome.runtime.onInstalled.addListener(() => {
     title: "Generate Playwright Snippet...",
     contexts: ["all"],
   });
+
+  // New separator
+  chrome.contextMenus.create({
+    id: "separator-2",
+    parentId: "selector-scout-parent",
+    type: "separator",
+    contexts: ["all"],
+  });
+
+  // Copy attribute menu item
+  chrome.contextMenus.create({
+    id: "copy-attribute",
+    parentId: "selector-scout-parent",
+    title: "Copy Attribute...",
+    contexts: ["all"],
+  });
 });
 
 // A listener for when a menu item is clicked

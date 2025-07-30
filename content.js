@@ -46,6 +46,10 @@ function handleAction(menuItemId, el) {
       const playwrightSuggestions = generatePlaywrightAssertions(el);
       showModal("Playwright Snippet Suggestions", playwrightSuggestions);
       break;
+    case "copy-attribute":
+      const attributes = generateAttributeList(el);
+      showModal("Copy Attribute Value", attributes);
+      break;
   }
 }
 
@@ -104,6 +108,31 @@ function generateCypressAssertions(el) {
   }
 
   return suggestions;
+}
+
+// Reads all attributes from an element
+/**
+ * Generates a list of all attributes on a given element.
+ * @param {Element} el The element to analyze.
+ * @returns {Array<Object>} An array of the element's attributes.
+ */
+function generateAttributeList(el) {
+  const attrs = [];
+
+  for (const attr of el.attributes) {
+    attrs.push({
+      // The display property shows the name and a preview of the value
+      display: `${attr.name}: "${attr.value.substring(0, 50)}..."`,
+      // The code property holds the full, raw value to be copied
+      code: attr.value,
+    });
+  }
+
+  if (attrs.length === 0) {
+    return [{ display: "No attributes found on this element.", code: "" }];
+  }
+
+  return attrs;
 }
 
 /**
