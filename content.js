@@ -42,6 +42,10 @@ function handleAction(menuItemId, el) {
       const suggestions = generateCypressAssertions(el); // generate list of choices
       showModal("Cypress Snippet Suggestions", suggestions); // show modal with those suggestions
       break;
+    case "generate-playwright-snippet":
+      const playwrightSuggestions = generatePlaywrightAssertions(el);
+      showModal("Playwright Snippet Suggestions", playwrightSuggestions);
+      break;
   }
 }
 
@@ -97,6 +101,65 @@ function generateCypressAssertions(el) {
     });
   } else {
     suggestions.push({ display: `.click()`, code: `${base}.click();` });
+  }
+
+  return suggestions;
+}
+
+/**
+ * Analyzes an element and generates a list of relevant Playwright assertions
+ */
+function generatePlaywrightAssertions(el) {
+  const selector = getCssSelector(el);
+  const locator = `page.locator('${selector}')`;
+  const tagName = el.tagName.toLowerCase();
+
+  let suggestions = [
+    {
+      display: `await expect(${locator}).toBeVisible();`,
+      code: `await expect(${locator}).toBeVisible();`,
+    },
+    {
+      display: `await expect(${locator}).toHaveCount(1);`,
+      code: `await expect(${locator}).toHaveCount(1);`,
+    },
+  ];
+
+  if (tagName === "a") {
+    suggestions.push({
+      display: `await expect(${locator}).toHaveAttribute('href', ...);`,
+      code: `await expect(${locator}).toHaveAttribute('href', '${el.getAttribute(
+        "href"
+      )}');`,
+    });
+  }
+  if (el.textContent) {
+    const text = el.textContent.trim().substring(0, 30);
+    suggestions.push({
+      display: `await expect(${locator}).toContainText(...);`,
+      code: `await expect(${locator}).toContainText('${text}');`,
+    });
+  }
+  if (tagName === "input" || tagName === "textarea") {
+    suggestions.push({
+      display: `await ${locator}.fill('your-text');`,
+      code: `await ${locator}.fill('your-text-here');`,
+    });
+    suggestions.push({
+      display: `await expect(${locator}).toHaveValue(...);`,
+      code: `await expect(${locator}).toHaveValue('${el.value}');`,
+    });
+  }
+  if (el.disabled) {
+    suggestions.push({
+      display: `await expect(${locator}).toBeDisabled();`,
+      code: `await expect(${locator}).toBeDisabled();`,
+    });
+  } else {
+    suggestions.push({
+      display: `await ${locator}.click();`,
+      code: `await ${locator}.click();`,
+    });
   }
 
   return suggestions;
