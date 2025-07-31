@@ -60,6 +60,14 @@ chrome.runtime.onInstalled.addListener(() => {
     title: "Copy Attribute...",
     contexts: ["all"],
   });
+
+  // Check accessibility menu item
+  chrome.contextMenus.create({
+    id: "check-accessibility",
+    parentId: "selector-scout-parent",
+    title: "Check Accessibility...",
+    contexts: ["all"],
+  });
 });
 
 // A listener for when a menu item is clicked
@@ -67,22 +75,14 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
   // Check if clicked item is one of ours
   if (
     info.menuItemId.startsWith("copy-") ||
-    info.menuItemId.startsWith("generate-")
+    info.menuItemId.startsWith("generate-") ||
+    info.menuItemId.startsWith("check-")
   ) {
-    // Inject the content js file. This makes all its functions available on the page
-    chrome.scripting
-      .executeScript({
-        target: { tabId: tab.id, allFrames: true },
-        files: ["content.js"],
-      })
-      .then(() => {
-        chrome.tabs.sendMessage(tab.id, {
-          // A unique name for the message type so the listener knows
-          type: "SS_PERFORM_ACTION",
-          // The data payload: the ID of the menu item that was clicked
-          menuItemId: info.menuItemId,
-        });
-      })
-      .catch((err) => console.error("Selector Scout Error: ", err));
+    chrome.tabs.sendMessage(tab.id, {
+      // A unique name for the message type so the listener knows
+      type: "SS_PERFORM_ACTION",
+      // The data payload: the ID of the menu item that was clicked
+      menuItemId: info.menuItemId,
+    });
   }
 });
