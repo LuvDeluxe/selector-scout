@@ -50,6 +50,11 @@ function handleAction(menuItemId, el) {
       const attributes = generateAttributeList(el);
       showModal("Copy Attribute Value", attributes);
       break;
+
+    case "check-accessibility":
+      const a11yInfo = generateAccessibilityInfo(el);
+      showModal("Accessibility Check", a11yInfo);
+      break;
   }
 }
 
@@ -251,6 +256,12 @@ function showModal(title, items) {
 
   const modal = document.createElement("div");
   modal.id = "selector-scout-modal";
+
+  chrome.storage.sync.get("darkMode", (data) => {
+    if (data.darkMode) {
+      modal.classList.add("ssm-dark-mode");
+    }
+  });
 
   modal.innerHTML = `
     <div class="ssm-overlay"></div>

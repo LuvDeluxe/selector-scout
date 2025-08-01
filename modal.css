@@ -18,7 +18,7 @@
 
 /* Dark overlay behind modal content */
 #selector-scout-modal .ssm-overlay {
-  position: aboslute;
+  position: absolute;
   width: 100%;
   height: 100%;
   background: rgba(0, 0, 0, 0.6);
@@ -97,5 +97,33 @@
 
 #selector-scout-modal .ssm-body li:hover {
   background: #007aff;
+  color: white;
+}
+
+/* Dark mode styles */
+#selector-scout-modal.ssm-dark-mode .ssm-content {
+  background: #1e1e1e;
+  color: #d4d4d4;
+  border: 1px solid #333;
+}
+
+#selector-scout-modal.ssm-dark-mode .ssm-header {
+  background: #252526;
+  border-bottom: 1px solid #333;
+}
+
+#selector-scout-modal.ssm-dark-mode #ssm-close {
+  color: #ccc;
+}
+#selector-scout-modal.ssm-dark-mode #ssm-close:hover {
+  color: #fff;
+}
+
+#selector-scout-modal.ssm-dark-mode .ssm-body li {
+  border-bottom: 1px solid #333;
+}
+
+#selector-scout-modal.ssm-dark-mode .ssm-body li:hover {
+  background: #007acc;
   color: white;
 }
