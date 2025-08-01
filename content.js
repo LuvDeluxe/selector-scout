@@ -136,6 +136,53 @@ function generateAttributeList(el) {
 }
 
 /**
+ * Checks an element for common accessibility issues
+ * @param {Element} el The element to analyze
+ * @returns {Array<Object>} An array of accessibility findings
+ */
+
+function generateAccessibilityInfo(el) {
+  const findings = [];
+  const tagName = el.tagName.toLowerCase();
+
+  if (tagName === "img") {
+    if (el.hasAttribute("alt")) {
+      findings.push({ display: `✅ ALT text: "${el.alt}"`, code: el.alt });
+    } else {
+      findings.push({
+        display: `❌ MISSING ALT TEXT`,
+        code: "Image is missing an alt attribute.",
+      });
+    }
+  }
+  if (tagName === "input" && el.type !== "hidden" && el.type !== "submit") {
+    const hasWrappingLabel = el.closest("label");
+    const hasAriaLabel = el.hasAttribute("aria-label");
+    const hasConnectedLabel = el.id
+      ? document.querySelector(`label[for="${el.id}"]`)
+      : null;
+
+    if (hasWrappingLabel || hasAriaLabel || hasConnectedLabel) {
+      findings.push({
+        display: `✅ Has an accessible name.`,
+        code: "Input has a label.",
+      });
+    } else {
+      findings.push({
+        display: `❌ MISSING LABEL`,
+        code: "Input is missing a <label> or aria-label.",
+      });
+    }
+  }
+
+  if (findings.length === 0) {
+    return [{ display: "No specific checks for this element type.", code: "" }];
+  }
+
+  return findings;
+}
+
+/**
  * Analyzes an element and generates a list of relevant Playwright assertions
  */
 function generatePlaywrightAssertions(el) {
