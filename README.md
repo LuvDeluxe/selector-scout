@@ -1,76 +1,90 @@
-# 🕵️‍♂️ Selector Scout
+# Selector Scout
 
-**Your friendly testing companion for Chrome.**
-Right-click any element to copy selectors, generate test snippets, and check accessibility.
+A Chrome extension that helps developers generate reliable CSS selectors, create test snippets for Cypress and Playwright, and check accessibility issues by right-clicking on any element.
 
-Selector Scout is a browser extension designed to speed up the workflow of QA testers and web developers.
-It eliminates the tedious task of manually inspecting elements to find selectors and format them for testing frameworks.
-With just a right-click, you get instant access to the tools you need.
+## Features
 
----
+- **Generate Cypress Snippets**: Right-click any element to get Cypress test assertions
+- **Generate Playwright Snippets**: Create Playwright test code for any element
+- **Copy Attributes**: View and copy any element's attributes
+- **Accessibility Check**: Identify common accessibility issues
+- **Dark Mode**: Toggle dark mode for the modal interface
+- **Smart Selector Generation**: Creates reliable, unique CSS selectors
 
-## ✨ Key Features
+## Installation
 
-- **One-Click Selectors**
-  Instantly copy a clean CSS selector or XPath to your clipboard.
+1. Clone or download this repository
+2. Open Chrome and go to `chrome://extensions/`
+3. Enable "Developer mode" in the top right
+4. Click "Load unpacked" and select the extension folder
+5. The extension icon should appear in your toolbar
 
-- **Test Snippet Generation**
-  Generate ready-to-use code snippets for popular frameworks like **Cypress** and **Playwright**.
+## How to Use
 
-- **Context-Aware Menus**
-  Get smart suggestions for assertions based on the element you click
-  _(e.g., `should('be.visible')`, `should('have.attr', 'href')`)_
+1. Navigate to any webpage
+2. Right-click on any element you want to test or inspect
+3. Select "Selector Scout" from the context menu
+4. Choose your desired action:
+   - **Generate Cypress snippet**: Get Cypress test code
+   - **Generate Playwright Snippet**: Get Playwright test code
+   - **Copy Attribute**: View and copy element attributes
+   - **Check Accessibility**: Identify a11y issues
 
-- **Accessibility Checker**
-  Quickly view basic accessibility properties of an element.
+## Recent Fixes
 
-- **Attribute Copier**
-  Easily copy the value of any HTML attribute.
+### Version 1.0.0 (Fixed)
 
----
+- ✅ **Fixed CSS Loading**: Modal styles now inject directly into content script
+- ✅ **Improved Clipboard Functionality**: Added modern Clipboard API with fallback
+- ✅ **Better Error Handling**: Added try-catch blocks and user feedback
+- ✅ **Enhanced Selector Generation**: More reliable and unique CSS selectors
+- ✅ **Fixed Dark Mode**: Corrected storage key inconsistency
+- ✅ **Improved Background Script**: Added error handling and duplicate prevention
+- ✅ **Better Toast Notifications**: More reliable feedback system
+- ✅ **Enhanced Security**: Added activeTab permission
 
-## 🚀 Installation
+## Technical Details
 
-> **Note:** This extension is currently under development.
+### Selector Generation Strategy
 
-To install and test the current version:
+The extension uses a priority-based approach for generating selectors:
 
-1. Clone or download this repository to your local machine.
-2. Open Google Chrome and navigate to: `chrome://extensions`
-3. Enable **Developer mode** (top-right corner).
-4. Click **Load unpacked**.
-5. Select the project folder you just downloaded.
+1. **ID selectors** (if unique)
+2. **data-testid attributes** (Cypress convention)
+3. **data-cy attributes** (Cypress convention)
+4. **Smart class-based selectors** (filters out dynamic classes)
+5. **Fallback to nth-child** (if needed)
 
-Selector Scout will now be active!
+### Clipboard Support
 
----
+- Modern `navigator.clipboard` API (secure contexts)
+- Fallback to `document.execCommand('copy')` for older browsers
+- Visual feedback with toast notifications
 
-## 📖 How to Use
+### Browser Compatibility
 
-1. Navigate to any webpage.
-2. Right-click on the element you want to inspect.
-3. Hover over the **"Selector Scout"** menu.
-4. Choose your desired action from the sub-menu!
+- Chrome 88+ (Manifest V3)
+- Supports both secure (HTTPS) and non-secure (HTTP) contexts
+- Works in all frames and iframes
 
----
+## Development
 
-## 🤝 Contributing
+To modify the extension:
 
-Contributions are welcome!
-This is an open-source project built for the community. If you have an idea for a new feature or find a bug, feel free to open an issue or submit a pull request.
+1. Edit the files in the repository
+2. Go to `chrome://extensions/`
+3. Click the refresh icon on the Selector Scout extension
+4. Test your changes
 
-### Contribution Steps
+## Troubleshooting
 
-```bash
-# Fork the project
-# Create your feature branch
-git checkout -b feature/AmazingFeature
+If the extension isn't working:
 
-# Commit your changes
-git commit -m 'Add some AmazingFeature'
+1. Check the browser console for errors
+2. Ensure the extension is enabled
+3. Try refreshing the target webpage
+4. Check if the page has any Content Security Policy restrictions
 
-# Push to the branch
-git push origin feature/AmazingFeature
+## License
 
-# Open a pull request
-```
+This project is open source and available under the [LICENSE](LICENSE) file.
