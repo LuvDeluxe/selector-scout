@@ -1,14 +1,19 @@
 /**
- * Add a listener to the whole document that waits for a contextmenu event
+ * A reliable way to track right-clicked element using mousedown.
  */
+let scoutLastTarget = null;
+
 document.addEventListener(
   "contextmenu",
   (event) => {
-    window.lastRightClickedElement = event.target;
+    scoutLastTarget = event.target;
+    console.log(
+      "Selector Scout: right-clicked element recorded:",
+      scoutLastTarget
+    );
   },
   true
 );
-
 /**
   Mailbox for content script
   Sets up a listener that runs the callback function every time a message
@@ -18,12 +23,13 @@ document.addEventListener(
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   // The request object is the message sent from background.js
   if (request.type === "SS_PERFORM_ACTION") {
-    if (!window.lastRightClickedElement) {
+    if (!scoutLastTarget) {
       console.error("Selector Scout: Element not found.");
+      showToast("⚠️ No element found. Try right-clicking on a real element.");
       return;
     }
     // Call main router function, passing necessary data from the message and the element stored earlier
-    handleAction(request.menuItemId, window.lastRightClickedElement);
+    handleAction(request.menuItemId, scoutLastTarget);
   }
 });
 
@@ -32,15 +38,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
  */
 function handleAction(menuItemId, el) {
   switch (menuItemId) {
-    case "copy-css-selector":
-      copyToClipboard(getCssSelector(el));
-      break;
-    case "copy-xpath":
-      copyToClipboard(getXPath(el));
-      break;
     case "generate-cypress-snippet":
-      const suggestions = generateCypressAssertions(el); // generate list of choices
-      showModal("Cypress Snippet Suggestions", suggestions); // show modal with those suggestions
+      const suggestions = generateCypressAssertions(el);
+      showModal("Cypress Snippet Suggestions", suggestions);
       break;
     case "generate-playwright-snippet":
       const playwrightSuggestions = generatePlaywrightAssertions(el);
@@ -407,14 +407,26 @@ function getXPath(el) {
  */
 function copyToClipboard(text) {
   if (!text) return;
-  navigator.clipboard
-    .writeText(text)
-    .then(() => {
+
+  try {
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    textarea.setAttribute("readonly", "");
+    textarea.style.position = "absolute";
+    textarea.style.left = "-9999px";
+    document.body.appendChild(textarea);
+    textarea.select();
+
+    const success = document.execCommand("copy");
+    if (success) {
       showToast(`Copied: ${text.substring(0, 60)}...`);
-    })
-    .catch((err) => {
-      console.error("Selector Scout: Failed to copy text: ", err);
-    });
+    } else {
+      throw new Error("Fallback copy failed.");
+    }
+    document.body.removeChild(textarea);
+  } catch (err) {
+    console.error("Selector Scout: Fallback copy failed", err);
+  }
 }
 
 /**

@@ -7,29 +7,6 @@ chrome.runtime.onInstalled.addListener(() => {
     contexts: ["all"],
   });
 
-  // Create basic copy actions
-  chrome.contextMenus.create({
-    id: "copy-css-selector",
-    parentId: "selector-scout-parent",
-    title: "Copy CSS Selector",
-    contexts: ["all"],
-  });
-
-  chrome.contextMenus.create({
-    id: "copy-xpath",
-    parentId: "selector-scout-parent",
-    title: "Copy XPath",
-    contexts: ["all"],
-  });
-
-  // Create separator line
-  chrome.contextMenus.create({
-    id: "separator-1",
-    parentId: "selector-scout-parent",
-    type: "separator",
-    contexts: ["all"],
-  });
-
   // Create Cypress snippet generator option
   chrome.contextMenus.create({
     id: "generate-cypress-snippet",
@@ -72,16 +49,13 @@ chrome.runtime.onInstalled.addListener(() => {
 
 // A listener for when a menu item is clicked
 chrome.contextMenus.onClicked.addListener((info, tab) => {
-  // Check if clicked item is one of ours
   if (
-    info.menuItemId.startsWith("copy-") ||
-    info.menuItemId.startsWith("generate-") ||
-    info.menuItemId.startsWith("check-")
+    info.menuItemId === "copy-attribute" ||
+    info.menuItemId === "check-accessibility" ||
+    info.menuItemId.startsWith("generate-")
   ) {
     chrome.tabs.sendMessage(tab.id, {
-      // A unique name for the message type so the listener knows
-      type: "SS_PERFORM_ACTION",
-      // The data payload: the ID of the menu item that was clicked
+      type: "SS_OPEN_MODAL",
       menuItemId: info.menuItemId,
     });
   }
