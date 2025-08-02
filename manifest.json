@@ -5,7 +5,8 @@
   "description": "Right-click any element to copy selectors, generate test snippets, and check accessibility.",
   "permissions": [
     "contextMenus",
-    "storage"
+    "storage",
+    "activeTab"
   ],
   "background": {
     "service_worker": "background.js"
@@ -19,16 +20,6 @@
         "content.js"
       ],
       "all_frames": true
-    }
-  ],
-  "web_accessible_resources": [
-    {
-      "resources": [
-        "modal.css"
-      ],
-      "matches": [
-        "<all_urls>"
-      ]
     }
   ],
   "action": {

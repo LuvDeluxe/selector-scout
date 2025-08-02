@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Selector Scout Test Page</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      .test-section {
+        margin: 20px 0;
+        padding: 15px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+      }
+      .button {
+        background: #007bff;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        margin: 5px;
+      }
+      .button:hover {
+        background: #0056b3;
+      }
+      .input-field {
+        padding: 8px;
+        margin: 5px;
+        border: 1px solid #ccc;
+        border-radius: 3px;
+      }
+      .link {
+        color: #007bff;
+        text-decoration: none;
+        margin: 5px;
+      }
+      .link:hover {
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Selector Scout Test Page</h1>
+    <p>
+      Right-click on any element below to test the Selector Scout extension.
+    </p>
+
+    <div class="test-section">
+      <h2>Buttons</h2>
+      <button class="button" id="primary-button">Primary Button</button>
+      <button class="button" disabled>Disabled Button</button>
+      <button class="button" data-testid="test-button">Test Button</button>
+    </div>
+
+    <div class="test-section">
+      <h2>Links</h2>
+      <a href="https://example.com" class="link">Example Link</a>
+      <a href="https://google.com" class="link" data-cy="google-link"
+        >Google Link</a
+      >
+      <a href="#" class="link">Empty Link</a>
+    </div>
+
+    <div class="test-section">
+      <h2>Form Elements</h2>
+      <input
+        type="text"
+        class="input-field"
+        placeholder="Enter text"
+        value="Default value"
+      />
+      <input type="email" class="input-field" placeholder="Enter email" />
+      <textarea class="input-field" placeholder="Enter message">
+Default message</textarea
+      >
+      <input type="checkbox" id="test-checkbox" />
+      <label for="test-checkbox">Test Checkbox</label>
+    </div>
+
+    <div class="test-section">
+      <h2>Images</h2>
+      <img
+        src="https://via.placeholder.com/150"
+        alt="Test image with alt text"
+        width="150"
+        height="150"
+      />
+      <img src="https://via.placeholder.com/150" width="150" height="150" />
+      <img
+        src="https://via.placeholder.com/150"
+        alt=""
+        width="150"
+        height="150"
+      />
+    </div>
+
+    <div class="test-section">
+      <h2>Complex Elements</h2>
+      <div class="nested-container">
+        <span class="inner-text">Nested text element</span>
+        <div class="deeply-nested">
+          <p class="paragraph-text">
+            This is a paragraph with some text content that should be detected
+            by the extension.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="test-section">
+      <h2>Dynamic Classes</h2>
+      <div class="dynamic-class-123">Dynamic class element</div>
+      <div class="stable-class">Stable class element</div>
+      <div class="another-stable-class">Another stable class</div>
+    </div>
+
+    <script>
+      // Add some dynamic content
+      document.addEventListener("DOMContentLoaded", function () {
+        console.log(
+          "Test page loaded. Right-click on any element to test Selector Scout!"
+        );
+      });
+    </script>
+  </body>
+</html>

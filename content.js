@@ -1,81 +1,282 @@
-/**
- * A reliable way to track right-clicked element using mousedown.
- */
 let scoutLastTarget = null;
+
+// Inject CSS styles for the modal
+function injectStyles() {
+  if (document.getElementById("selector-scout-styles")) return;
+
+  const style = document.createElement("style");
+  style.id = "selector-scout-styles";
+  style.textContent = `
+    /* Modal dialogs CSS */
+    #selector-scout-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 2147483647;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #selector-scout-modal .ssm-overlay {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.6);
+    }
+
+    #selector-scout-modal .ssm-content {
+      position: relative;
+      width: 90%;
+      max-width: 550px;
+      background: #2c2c2e;
+      color: #fff;
+      border-radius: 12px;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+      border: 1px solid #4a4a4a;
+      overflow: hidden;
+    }
+
+    #selector-scout-modal .ssm-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 20px;
+      background: #333;
+      border-bottom: 1px solid #4a4a4a;
+    }
+
+    #selector-scout-modal .ssm-header h3 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    #selector-scout-modal #ssm-close {
+      background: none;
+      border: none;
+      color: #aaa;
+      font-size: 28px;
+      font-weight: bold;
+      cursor: pointer;
+      padding: 0 8px;
+      line-height: 1;
+      transition: color 0.2s ease;
+    }
+
+    #selector-scout-modal #ssm-close:hover {
+      color: #fff;
+    }
+
+    #selector-scout-modal .ssm-body ul {
+      list-style: none;
+      padding: 8px 0;
+      margin: 0;
+      max-height: 60vh;
+      overflow-y: auto;
+    }
+
+    #selector-scout-modal .ssm-body li {
+      padding: 14px 20px;
+      cursor: pointer;
+      transition: background-color 0.2s ease, color 0.2s ease;
+      border-bottom: 1px solid #3a3a3a;
+      font-family: "SF Mono", "Consolas", "Menlo", monospace;
+      font-size: 14px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    #selector-scout-modal .ssm-body li:last-child {
+      border-bottom: none;
+    }
+
+    #selector-scout-modal .ssm-body li:hover {
+      background: #007aff;
+      color: white;
+    }
+
+    /* Dark mode styles */
+    #selector-scout-modal.ssm-dark-mode .ssm-content {
+      background: #1e1e1e;
+      color: #d4d4d4;
+      border: 1px solid #333;
+    }
+
+    #selector-scout-modal.ssm-dark-mode .ssm-header {
+      background: #252526;
+      border-bottom: 1px solid #333;
+    }
+
+    #selector-scout-modal.ssm-dark-mode #ssm-close {
+      color: #ccc;
+    }
+
+    #selector-scout-modal.ssm-dark-mode #ssm-close:hover {
+      color: #fff;
+    }
+
+    #selector-scout-modal.ssm-dark-mode .ssm-body li {
+      border-bottom: 1px solid #333;
+    }
+
+    #selector-scout-modal.ssm-dark-mode .ssm-body li:hover {
+      background: #007acc;
+      color: white;
+    }
+
+    /* Toast notification */
+    .selector-scout-toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: #007aff;
+      color: white;
+      padding: 12px 24px;
+      border-radius: 8px;
+      z-index: 2147483647;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 14px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+      transition: all 0.3s ease;
+      opacity: 0;
+      transform: translate(-50%, 10px);
+      max-width: 80%;
+      word-wrap: break-word;
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+// Inject styles when the script loads
+injectStyles();
+
+// Improved element capture - use both mousedown and contextmenu events
+document.addEventListener(
+  "mousedown",
+  (event) => {
+    // Store the target on mousedown to ensure we capture the right element
+    if (event.button === 2) {
+      // Right mouse button
+      scoutLastTarget = event.target;
+      console.log(
+        "Selector Scout: Captured element on mousedown:",
+        event.target
+      );
+    }
+  },
+  true
+);
 
 document.addEventListener(
   "contextmenu",
   (event) => {
+    // Also capture on contextmenu as backup
     scoutLastTarget = event.target;
     console.log(
-      "Selector Scout: right-clicked element recorded:",
-      scoutLastTarget
+      "Selector Scout: Captured element on contextmenu:",
+      event.target
     );
   },
   true
 );
-/**
-  Mailbox for content script
-  Sets up a listener that runs the callback function every time a message
-  is sent to this tab.
- */
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  // The request object is the message sent from background.js
-  if (request.type === "SS_PERFORM_ACTION") {
+  console.log("Selector Scout: Received message:", request);
+
+  if (!sender || sender.id !== chrome.runtime.id) {
+    console.log("Selector Scout: Invalid sender, ignoring message");
+    return;
+  }
+  if (!request || typeof request !== "object" || !request.type) {
+    console.log("Selector Scout: Invalid request format, ignoring message");
+    return;
+  }
+
+  if (request.type === "SS_OPEN_MODAL") {
+    console.log(
+      "Selector Scout: Opening modal for menu item:",
+      request.menuItemId
+    );
+    console.log("Selector Scout: Current target element:", scoutLastTarget);
+
     if (!scoutLastTarget) {
       console.error("Selector Scout: Element not found.");
       showToast("⚠️ No element found. Try right-clicking on a real element.");
       return;
     }
-    // Call main router function, passing necessary data from the message and the element stored earlier
+
+    // Verify the element still exists in the DOM
+    if (!document.contains(scoutLastTarget)) {
+      console.error("Selector Scout: Element no longer exists in DOM.");
+      showToast("⚠️ Element no longer exists. Try right-clicking again.");
+      return;
+    }
+
     handleAction(request.menuItemId, scoutLastTarget);
   }
 });
 
-/**
- * Main action router Looks at the menuItemId and decides which follow-up function to call
- */
 function handleAction(menuItemId, el) {
-  switch (menuItemId) {
-    case "generate-cypress-snippet":
-      const suggestions = generateCypressAssertions(el);
-      showModal("Cypress Snippet Suggestions", suggestions);
-      break;
-    case "generate-playwright-snippet":
-      const playwrightSuggestions = generatePlaywrightAssertions(el);
-      showModal("Playwright Snippet Suggestions", playwrightSuggestions);
-      break;
-    case "copy-attribute":
-      const attributes = generateAttributeList(el);
-      showModal("Copy Attribute Value", attributes);
-      break;
+  try {
+    console.log(
+      "Selector Scout: Handling action:",
+      menuItemId,
+      "for element:",
+      el
+    );
 
-    case "check-accessibility":
-      const a11yInfo = generateAccessibilityInfo(el);
-      showModal("Accessibility Check", a11yInfo);
-      break;
+    switch (menuItemId) {
+      case "generate-cypress-snippet":
+        const suggestions = generateCypressAssertions(el);
+        showModal("Cypress Snippet Suggestions", suggestions);
+        break;
+      case "generate-playwright-snippet":
+        const playwrightSuggestions = generatePlaywrightAssertions(el);
+        showModal("Playwright Snippet Suggestions", playwrightSuggestions);
+        break;
+      case "copy-attribute":
+        const attributes = generateAttributeList(el);
+        showModal("Copy Attribute Value", attributes);
+        break;
+      case "check-accessibility":
+        const a11yInfo = generateAccessibilityInfo(el);
+        showModal("Accessibility Check", a11yInfo);
+        break;
+      default:
+        console.error("Selector Scout: Unknown menu item:", menuItemId);
+    }
+  } catch (error) {
+    console.error("Selector Scout: Error handling action:", error);
+    showToast("❌ An error occurred while processing your request.");
   }
 }
 
-/**
- * Analyzes an element and generates a list of useful, context aware Cypress commands
- */
 function generateCypressAssertions(el) {
   const selector = getCssSelector(el);
+  if (!selector) {
+    return [
+      {
+        display: "❌ Could not generate a reliable selector for this element.",
+        code: "",
+      },
+    ];
+  }
+
   const base = `cy.get('${selector}')`;
   const tagName = el.tagName.toLowerCase();
 
-  // Start with useful suggestions
   let suggestions = [
     { display: `.should('be.visible')`, code: `${base}.should('be.visible');` },
     { display: `.should('exist')`, code: `${base}.should('exist');` },
   ];
 
-  // Check properties of the element for adding smarter suggestions
-
-  // Suggest checking a links 'href'.
-  if (tagName === "a") {
+  if (tagName === "a" && el.hasAttribute("href")) {
     suggestions.push({
       display: `.should('have.attr', 'href', ...)`,
       code: `${base}.should('have.attr', 'href', '${el.getAttribute(
@@ -83,8 +284,8 @@ function generateCypressAssertions(el) {
       )}');`,
     });
   }
-  // Suggest checking for text if it has it.
-  if (el.textContent) {
+
+  if (el.textContent && el.textContent.trim()) {
     const text = el.textContent.trim().substring(0, 30);
     suggestions.push({
       display: `.should('contain', '${text}...')`,
@@ -97,10 +298,12 @@ function generateCypressAssertions(el) {
       display: `.type('your-text')`,
       code: `${base}.type('your-text-here');`,
     });
-    suggestions.push({
-      display: `.should('have.value', ...)`,
-      code: `${base}.should('have.value', '${el.value}');`,
-    });
+    if (el.value) {
+      suggestions.push({
+        display: `.should('have.value', ...)`,
+        code: `${base}.should('have.value', '${el.value}');`,
+      });
+    }
   }
 
   if (el.disabled) {
@@ -115,83 +318,79 @@ function generateCypressAssertions(el) {
   return suggestions;
 }
 
-// Reads all attributes from an element
-/**
- * Generates a list of all attributes on a given element.
- * @param {Element} el The element to analyze.
- * @returns {Array<Object>} An array of the element's attributes.
- */
 function generateAttributeList(el) {
   const attrs = [];
-
-  for (const attr of el.attributes) {
-    attrs.push({
-      // The display property shows the name and a preview of the value
-      display: `${attr.name}: "${attr.value.substring(0, 50)}..."`,
-      // The code property holds the full, raw value to be copied
-      code: attr.value,
-    });
+  if (el.hasAttributes()) {
+    for (const attr of el.attributes) {
+      const value = attr.value || "";
+      attrs.push({
+        display: `${attr.name}: "${value.substring(0, 50)}${
+          value.length > 50 ? "..." : ""
+        }"`,
+        code: value,
+      });
+    }
   }
-
   if (attrs.length === 0) {
     return [{ display: "No attributes found on this element.", code: "" }];
   }
-
   return attrs;
 }
-
-/**
- * Checks an element for common accessibility issues
- * @param {Element} el The element to analyze
- * @returns {Array<Object>} An array of accessibility findings
- */
 
 function generateAccessibilityInfo(el) {
   const findings = [];
   const tagName = el.tagName.toLowerCase();
 
-  if (tagName === "img") {
-    if (el.hasAttribute("alt")) {
-      findings.push({ display: `✅ ALT text: "${el.alt}"`, code: el.alt });
-    } else {
-      findings.push({
-        display: `❌ MISSING ALT TEXT`,
-        code: "Image is missing an alt attribute.",
-      });
-    }
+  if (tagName === "img" && !el.hasAttribute("alt")) {
+    findings.push({
+      display: `❌ MISSING ALT TEXT`,
+      code: "Image is missing an alt attribute.",
+    });
+  } else if (tagName === "img" && el.hasAttribute("alt")) {
+    findings.push({ display: `✅ ALT text: "${el.alt}"`, code: el.alt });
   }
+
   if (tagName === "input" && el.type !== "hidden" && el.type !== "submit") {
     const hasWrappingLabel = el.closest("label");
     const hasAriaLabel = el.hasAttribute("aria-label");
     const hasConnectedLabel = el.id
       ? document.querySelector(`label[for="${el.id}"]`)
       : null;
-
-    if (hasWrappingLabel || hasAriaLabel || hasConnectedLabel) {
-      findings.push({
-        display: `✅ Has an accessible name.`,
-        code: "Input has a label.",
-      });
-    } else {
+    if (!hasWrappingLabel && !hasAriaLabel && !hasConnectedLabel) {
       findings.push({
         display: `❌ MISSING LABEL`,
         code: "Input is missing a <label> or aria-label.",
+      });
+    } else {
+      findings.push({
+        display: `✅ Has an accessible name.`,
+        code: "Input has a label.",
       });
     }
   }
 
   if (findings.length === 0) {
-    return [{ display: "No specific checks for this element type.", code: "" }];
+    return [
+      {
+        display: "No specific accessibility checks for this element type.",
+        code: "",
+      },
+    ];
   }
-
   return findings;
 }
 
-/**
- * Analyzes an element and generates a list of relevant Playwright assertions
- */
 function generatePlaywrightAssertions(el) {
   const selector = getCssSelector(el);
+  if (!selector) {
+    return [
+      {
+        display: "❌ Could not generate a reliable selector for this element.",
+        code: "",
+      },
+    ];
+  }
+
   const locator = `page.locator('${selector}')`;
   const tagName = el.tagName.toLowerCase();
 
@@ -206,7 +405,7 @@ function generatePlaywrightAssertions(el) {
     },
   ];
 
-  if (tagName === "a") {
+  if (tagName === "a" && el.hasAttribute("href")) {
     suggestions.push({
       display: `await expect(${locator}).toHaveAttribute('href', ...);`,
       code: `await expect(${locator}).toHaveAttribute('href', '${el.getAttribute(
@@ -214,23 +413,28 @@ function generatePlaywrightAssertions(el) {
       )}');`,
     });
   }
-  if (el.textContent) {
-    const text = el.textContent.trim().substring(0, 30);
+
+  if (el.textContent && el.textContent.trim()) {
+    const text = el.textContent.trim();
     suggestions.push({
       display: `await expect(${locator}).toContainText(...);`,
       code: `await expect(${locator}).toContainText('${text}');`,
     });
   }
+
   if (tagName === "input" || tagName === "textarea") {
     suggestions.push({
       display: `await ${locator}.fill('your-text');`,
       code: `await ${locator}.fill('your-text-here');`,
     });
-    suggestions.push({
-      display: `await expect(${locator}).toHaveValue(...);`,
-      code: `await expect(${locator}).toHaveValue('${el.value}');`,
-    });
+    if (el.value) {
+      suggestions.push({
+        display: `await expect(${locator}).toHaveValue(...);`,
+        code: `await expect(${locator}).toHaveValue('${el.value}');`,
+      });
+    }
   }
+
   if (el.disabled) {
     suggestions.push({
       display: `await expect(${locator}).toBeDisabled();`,
@@ -246,11 +450,7 @@ function generatePlaywrightAssertions(el) {
   return suggestions;
 }
 
-/**
- * This function builds and displays the custom HTML modal on the page.
- */
 function showModal(title, items) {
-  // If already open, remove it to prevent duplicates.
   const existingModal = document.getElementById("selector-scout-modal");
   if (existingModal) existingModal.remove();
 
@@ -267,7 +467,7 @@ function showModal(title, items) {
     <div class="ssm-overlay"></div>
     <div class="ssm-content">
         <div class="ssm-header">
-            <h3>${title}</h3>
+            <h3>${escapeHTML(title)}</h3>
             <button id="ssm-close">&times;</button>
         </div>
         <div class="ssm-body">
@@ -290,11 +490,9 @@ function showModal(title, items) {
   modal
     .querySelector("#ssm-close")
     .addEventListener("click", () => modal.remove());
-
   modal
     .querySelector(".ssm-overlay")
     .addEventListener("click", () => modal.remove());
-
   modal.querySelectorAll(".ssm-body li").forEach((li) => {
     li.addEventListener("click", () => {
       copyToClipboard(li.dataset.code);
@@ -303,111 +501,111 @@ function showModal(title, items) {
   });
 }
 
-/**
- * Generates a unique, stable CSS selector for a given HTML element.
- * The strategy is to find the most reliable selector possible.
- * @param {Element} el The HTML element to generate a selector for.
- * @returns {string} The generated CSS selector.
- */
-
 function getCssSelector(el) {
-  // Ensure working with an HTML element
-  if (!(el instanceof Element)) {
-    return;
+  if (!(el instanceof Element)) return null;
+
+  // Try ID first
+  if (el.id && el.id.trim()) {
+    const idSelector = `#${el.id}`;
+    if (document.querySelectorAll(idSelector).length === 1) {
+      return idSelector;
+    }
   }
 
-  // 1 Use a unique ID if it exists
-  if (el.id) {
-    return `#${el.id}`;
-  }
-
-  // 2 Use a data-testid attribute
+  // Try data-testid
   if (el.hasAttribute("data-testid")) {
-    return `[data-testid="${el.getAttribute("data-testid")}"]`;
+    const testId = el.getAttribute("data-testid");
+    if (testId && testId.trim()) {
+      return `[data-testid="${testId}"]`;
+    }
   }
 
-  // 3 Fallback to constructing a path from the element up to the body
-  const path = [];
-  while (el && el.nodeType === Node.ELEMENT_NODE) {
-    // Start with elements tag name (e.g 'div', 'button')
-    let selector = el.nodeName.toLowerCase();
+  // Try data-cy (Cypress convention)
+  if (el.hasAttribute("data-cy")) {
+    const dataCy = el.getAttribute("data-cy");
+    if (dataCy && dataCy.trim()) {
+      return `[data-cy="${dataCy}"]`;
+    }
+  }
 
-    // Add class names if they exist. This makes the selector more specific. E.G div.class1.class2
-    if (el.className) {
-      const stableClasses = el.className.split(/\s+/).filter(Boolean).join(".");
-      if (stableClasses) {
-        selector += `.${stableClasses}`;
+  // Build a more reliable selector
+  const path = [];
+  let currentEl = el;
+
+  while (currentEl && currentEl.nodeType === Node.ELEMENT_NODE) {
+    let selector = currentEl.nodeName.toLowerCase();
+
+    // Add classes if they exist and are stable
+    if (currentEl.className && typeof currentEl.className === "string") {
+      const classes = currentEl.className.split(/\s+/).filter(Boolean);
+      if (classes.length > 0) {
+        // Only use classes that don't seem dynamic (avoid classes with numbers, etc.)
+        const stableClasses = classes.filter(
+          (cls) =>
+            !/\d/.test(cls) &&
+            !cls.includes("__") &&
+            !cls.includes("--") &&
+            cls.length > 2
+        );
+        if (stableClasses.length > 0) {
+          selector += `.${stableClasses.slice(0, 2).join(".")}`;
+        }
       }
     }
 
-    // If multiple siblings with same tag, need to add `:nth-of-type`
-    // to distinguish the element from its brothers and sisters
-    const siblings = Array.from(el.parentNode.children);
-    const sameTagSiblings = siblings.filter(
-      (sibling) => sibling.nodeName.toLowerCase() === el.nodeName.toLowerCase()
-    );
-    if (sameTagSiblings.length > 1) {
-      const index = sameTagSiblings.indexOf(el) + 1;
-      selector += `:nth-of-type(${index})`;
+    // Add nth-child if needed
+    if (currentEl.parentNode) {
+      const siblings = Array.from(currentEl.parentNode.children);
+      const sameTagSiblings = siblings.filter(
+        (sibling) =>
+          sibling.nodeName.toLowerCase() === currentEl.nodeName.toLowerCase()
+      );
+      if (sameTagSiblings.length > 1) {
+        const index = sameTagSiblings.indexOf(currentEl) + 1;
+        selector += `:nth-of-type(${index})`;
+      }
     }
 
-    // Add generated part of the selector to the beginning of path array
     path.unshift(selector);
 
-    // After adding a part check if selector is unique. If so stop
-    // This prevents creating unnecessarily long selectors like 'body > div > ...'
+    // Check if this path is unique
     try {
-      if (document.querySelectorAll(path.join(" > ")).length === 1) {
-        break;
+      const fullSelector = path.join(" > ");
+      if (document.querySelectorAll(fullSelector).length === 1) {
+        return fullSelector;
       }
-    } catch (e) {}
+    } catch (e) {
+      // If selector is invalid, continue building
+    }
 
-    // Move up to the next parent element and repeat the process.
-    el = el.parentNode;
+    if (!currentEl.parentNode || currentEl.parentNode === document.body) break;
+    currentEl = currentEl.parentNode;
   }
+
   return path.join(" > ");
 }
 
 /**
- * Generates an XPath for a given element using a recursive approach.
- * @param {Element} el The element to generate an XPath for.
- * @returns {string} The XPath.
- */
-function getXPath(el) {
-  // if element has id, use for direct and stable xPath
-  if (el.id !== "") {
-    return `id("${el.id}")`;
-  }
-
-  // if reached top stop recursion
-  if (el === document.body) {
-    return el.tagName;
-  }
-
-  let ix = 0;
-  const siblings = el.parentNode.childNodes;
-
-  for (let i = 0; i < siblings.length; i++) {
-    const sibling = siblings[i];
-
-    if (sibling === el) {
-      // Recursively call getXPath for the parent and append this elements path part
-      return `${getXPath(el.parentNode)}/${el.tagName}[${ix + 1}]`;
-    }
-    // Count only element nodes with same tag name to get the correct index
-    if (sibling.nodeType === 1 && sibling.tagName === el.tagName) {
-      ix++;
-    }
-  }
-}
-
-/**
- * Copies text and now shows a visual confirmation toast.
+ * Copies text to the clipboard using modern Clipboard API with fallback.
  * @param {string} text The text to copy.
  */
-function copyToClipboard(text) {
-  if (!text) return;
+async function copyToClipboard(text) {
+  if (typeof text !== "string" || !text) return;
 
+  try {
+    // Try modern Clipboard API first
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+      showToast(
+        `✅ Copied: ${text.substring(0, 50)}${text.length > 50 ? "..." : ""}`
+      );
+      return;
+    }
+  } catch (err) {
+    console.log("Modern clipboard API failed, trying fallback");
+  }
+
+  // Fallback to execCommand
   try {
     const textarea = document.createElement("textarea");
     textarea.value = text;
@@ -415,24 +613,24 @@ function copyToClipboard(text) {
     textarea.style.position = "absolute";
     textarea.style.left = "-9999px";
     document.body.appendChild(textarea);
-    textarea.select();
 
+    textarea.select();
     const success = document.execCommand("copy");
-    if (success) {
-      showToast(`Copied: ${text.substring(0, 60)}...`);
-    } else {
-      throw new Error("Fallback copy failed.");
-    }
     document.body.removeChild(textarea);
+
+    if (success) {
+      showToast(
+        `✅ Copied: ${text.substring(0, 50)}${text.length > 50 ? "..." : ""}`
+      );
+    } else {
+      showToast("❌ Failed to copy to clipboard");
+    }
   } catch (err) {
-    console.error("Selector Scout: Fallback copy failed", err);
+    console.error("Selector Scout: Copy to clipboard failed.", err);
+    showToast("❌ Failed to copy to clipboard");
   }
 }
 
-/**
- * Shows a temporary toast message on the page
- * @param {string} message The message to display
- */
 function showToast(message) {
   const existingToast = document.querySelector(".selector-scout-toast");
   if (existingToast) existingToast.remove();
@@ -441,33 +639,25 @@ function showToast(message) {
   toast.className = "selector-scout-toast";
   toast.textContent = message;
 
-  // Apply CSS directly via JS for self-contaiend functionality
-  toast.style.cssText = `position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
-        background-color: #007aff; color: white; padding: 12px 24px; border-radius: 8px;
-        z-index: 2147483647; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        font-size: 14px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-        transition: opacity 0.5s ease, bottom 0.5s ease; opacity: 0;`;
   document.body.appendChild(toast);
 
-  // Use short timeout to trigger transition for smooth fade-in animation
+  // Trigger reflow
+  toast.offsetHeight;
+
   setTimeout(() => {
     toast.style.opacity = "1";
-    toast.style.bottom = "40px";
+    toast.style.transform = "translate(-50%, 0)";
   }, 10);
 
-  // After 3 seconds fade the toast out and remove it from the dom
   setTimeout(() => {
     toast.style.opacity = "0";
-    toast.style.bottom = "30px";
-    setTimeout(() => toast.remove(), 500);
+    toast.style.transform = "translate(-50%, 10px)";
+    setTimeout(() => toast.remove(), 300);
   }, 3000);
 }
 
-/**
- * Escapes HTML special characters
- * @param {string} str The string to escape
- */
 function escapeHTML(str) {
+  if (typeof str !== "string") return "";
   const p = document.createElement("p");
   p.appendChild(document.createTextNode(str));
   return p.innerHTML;

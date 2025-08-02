@@ -2,7 +2,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Load the users saved preference for dark mode from storage
   const darkModeToggle = document.getElementById("darkModeToggle");
 
-  chrome.storage.sync.get("darkmode", (data) => {
+  chrome.storage.sync.get("darkMode", (data) => {
     // if dark mode saved as true, check the toggle
     if (data.darkMode) {
       darkModeToggle.checked = true;
