@@ -29,15 +29,16 @@ function injectStyles() {
       background: rgba(0, 0, 0, 0.6);
     }
 
+    /* Light mode styles (default) */
     #selector-scout-modal .ssm-content {
       position: relative;
       width: 90%;
       max-width: 550px;
-      background: #2c2c2e;
-      color: #fff;
+      background: #ffffff;
+      color: #333333;
       border-radius: 12px;
-      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
-      border: 1px solid #4a4a4a;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+      border: 1px solid #e0e0e0;
       overflow: hidden;
     }
 
@@ -46,20 +47,21 @@ function injectStyles() {
       justify-content: space-between;
       align-items: center;
       padding: 14px 20px;
-      background: #333;
-      border-bottom: 1px solid #4a4a4a;
+      background: #f8f9fa;
+      border-bottom: 1px solid #e0e0e0;
     }
 
     #selector-scout-modal .ssm-header h3 {
       margin: 0;
       font-size: 18px;
       font-weight: 600;
+      color: #333333;
     }
 
     #selector-scout-modal #ssm-close {
       background: none;
       border: none;
-      color: #aaa;
+      color: #666666;
       font-size: 28px;
       font-weight: bold;
       cursor: pointer;
@@ -69,7 +71,7 @@ function injectStyles() {
     }
 
     #selector-scout-modal #ssm-close:hover {
-      color: #fff;
+      color: #333333;
     }
 
     #selector-scout-modal .ssm-body ul {
@@ -84,11 +86,12 @@ function injectStyles() {
       padding: 14px 20px;
       cursor: pointer;
       transition: background-color 0.2s ease, color 0.2s ease;
-      border-bottom: 1px solid #3a3a3a;
+      border-bottom: 1px solid #f0f0f0;
       font-family: "SF Mono", "Consolas", "Menlo", monospace;
       font-size: 14px;
       white-space: pre-wrap;
       word-break: break-word;
+      color: #333333;
     }
 
     #selector-scout-modal .ssm-body li:last-child {
@@ -102,26 +105,32 @@ function injectStyles() {
 
     /* Dark mode styles */
     #selector-scout-modal.ssm-dark-mode .ssm-content {
-      background: #1e1e1e;
-      color: #d4d4d4;
-      border: 1px solid #333;
+      background: #2c2c2e;
+      color: #ffffff;
+      border: 1px solid #4a4a4a;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
     }
 
     #selector-scout-modal.ssm-dark-mode .ssm-header {
-      background: #252526;
-      border-bottom: 1px solid #333;
+      background: #333333;
+      border-bottom: 1px solid #4a4a4a;
+    }
+
+    #selector-scout-modal.ssm-dark-mode .ssm-header h3 {
+      color: #ffffff;
     }
 
     #selector-scout-modal.ssm-dark-mode #ssm-close {
-      color: #ccc;
+      color: #aaaaaa;
     }
 
     #selector-scout-modal.ssm-dark-mode #ssm-close:hover {
-      color: #fff;
+      color: #ffffff;
     }
 
     #selector-scout-modal.ssm-dark-mode .ssm-body li {
-      border-bottom: 1px solid #333;
+      border-bottom: 1px solid #3a3a3a;
+      color: #ffffff;
     }
 
     #selector-scout-modal.ssm-dark-mode .ssm-body li:hover {
@@ -458,7 +467,8 @@ function showModal(title, items) {
   modal.id = "selector-scout-modal";
 
   chrome.storage.sync.get("darkMode", (data) => {
-    if (data.darkMode) {
+    // Default to light mode unless darkMode is explicitly set to true
+    if (data.darkMode === true) {
       modal.classList.add("ssm-dark-mode");
     }
   });

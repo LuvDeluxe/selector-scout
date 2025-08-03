@@ -30,11 +30,11 @@
   position: relative;
   width: 90%;
   max-width: 550px;
-  background: #2c2c2e;
-  color: #fff;
+  background: #ffffff;
+  color: #333333;
   border-radius: 12px;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
-  border: 1px solid #4a4a4a;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+  border: 1px solid #e0e0e0;
   overflow: hidden;
 }
 
@@ -44,21 +44,22 @@
   justify-content: space-between;
   align-items: center;
   padding: 14px 20px;
-  background: #333;
-  border-bottom: 1px solid #4a4a4a;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e0e0e0;
 }
 
 #selector-scout-modal .ssm-header h3 {
   margin: 0;
   font-size: 18px;
   font-weight: 600;
+  color: #333333;
 }
 
 /* Close button in the header */
 #selector-scout-modal #ssm-close {
   background: none;
   border: none;
-  color: #aaa;
+  color: #666666;
   font-size: 28px;
   font-weight: bold;
   cursor: pointer;
@@ -68,7 +69,7 @@
 }
 
 #selector-scout-modal #ssm-close:hover {
-  color: #fff;
+  color: #333333;
 }
 
 /* The body of the modal which will contain list of suggestions */
@@ -85,10 +86,11 @@
   padding: 14px 20px;
   cursor: pointer;
   transition: background-color 0.2 ease, color 0.2s ease;
-  border-bottom: 1px solid #3a3a3a;
+  border-bottom: 1px solid #f0f0f0;
   font-family: "SF Mono", "Consolas", "Menlo", monospace;
   font-size: 14px;
   white-space: pre;
+  color: #333333;
 }
 
 #selector-scout-modal .ssm-body li:last-child {
