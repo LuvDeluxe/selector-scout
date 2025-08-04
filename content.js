@@ -1,5 +1,12 @@
 let scoutLastTarget = null;
 
+// Decode HTML entities for better attribute values
+function decodeHTMLEntities(str) {
+  const txt = document.createElement("textarea");
+  txt.innerHTML = str;
+  return txt.value;
+}
+
 // Inject CSS styles for the modal
 function injectStyles() {
   if (document.getElementById("selector-scout-styles")) return;
@@ -200,10 +207,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
   if (!sender || sender.id !== chrome.runtime.id) {
     console.log("Selector Scout: Invalid sender, ignoring message");
+    sendResponse({ success: false, error: "Invalid sender" });
     return;
   }
   if (!request || typeof request !== "object" || !request.type) {
     console.log("Selector Scout: Invalid request format, ignoring message");
+    sendResponse({ success: false, error: "Invalid request format" });
     return;
   }
 
@@ -217,6 +226,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (!scoutLastTarget) {
       console.error("Selector Scout: Element not found.");
       showToast("⚠️ No element found. Try right-clicking on a real element.");
+      sendResponse({ success: false, error: "No element found" });
       return;
     }
 
@@ -224,10 +234,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (!document.contains(scoutLastTarget)) {
       console.error("Selector Scout: Element no longer exists in DOM.");
       showToast("⚠️ Element no longer exists. Try right-clicking again.");
+      sendResponse({ success: false, error: "Element no longer exists" });
       return;
     }
 
     handleAction(request.menuItemId, scoutLastTarget);
+    sendResponse({ success: true });
   }
 });
 
@@ -251,7 +263,7 @@ function handleAction(menuItemId, el) {
         break;
       case "copy-attribute":
         const attributes = generateAttributeList(el);
-        showModal("Copy Attribute Value", attributes);
+        showModal("Copy CSS Selector or Attribute", attributes);
         break;
       case "check-accessibility":
         const a11yInfo = generateAccessibilityInfo(el);
@@ -332,17 +344,48 @@ function generateAttributeList(el) {
   if (el.hasAttributes()) {
     for (const attr of el.attributes) {
       const value = attr.value || "";
-      attrs.push({
-        display: `${attr.name}: "${value.substring(0, 50)}${
+      // Simple formatting for common attributes
+      let formattedValue = value;
+      let displayText = `${attr.name}: "${value.substring(0, 50)}${
+        value.length > 50 ? "..." : ""
+      }"`;
+
+      if (attr.name === "class" && value.trim()) {
+        formattedValue = value
+          .trim()
+          .split(/\s+/)
+          .map((cls) => `.${cls}`)
+          .join("");
+        displayText = `${attr.name}: "${value.substring(0, 50)}${
           value.length > 50 ? "..." : ""
-        }"`,
-        code: value,
+        }" → ${formattedValue}`;
+      } else if (attr.name === "id" && value.trim()) {
+        formattedValue = `#${value.trim()}`;
+        displayText = `${attr.name}: "${value}" → ${formattedValue}`;
+      }
+
+      const finalValue = decodeHTMLEntities(formattedValue);
+      console.log(
+        "Selector Scout: Attribute",
+        attr.name,
+        "raw value:",
+        value,
+        "formatted:",
+        formattedValue,
+        "final:",
+        finalValue
+      );
+
+      attrs.push({
+        display: displayText,
+        code: finalValue,
       });
     }
   }
   if (attrs.length === 0) {
     return [{ display: "No attributes found on this element.", code: "" }];
   }
+
   return attrs;
 }
 
@@ -503,9 +546,10 @@ function showModal(title, items) {
   modal
     .querySelector(".ssm-overlay")
     .addEventListener("click", () => modal.remove());
-  modal.querySelectorAll(".ssm-body li").forEach((li) => {
+  modal.querySelectorAll(".ssm-body li").forEach((li, index) => {
     li.addEventListener("click", () => {
-      copyToClipboard(li.dataset.code);
+      const item = items[index];
+      copyToClipboard(item.code);
       modal.remove();
     });
   });

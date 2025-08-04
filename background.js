@@ -123,17 +123,23 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
     info.menuItemId === "check-accessibility" ||
     info.menuItemId.startsWith("generate-")
   ) {
-    try {
-      chrome.tabs.sendMessage(
-        tab.id,
-        {
-          type: "SS_OPEN_MODAL",
-          menuItemId: info.menuItemId,
-        },
-        { frameId: info.frameId }
-      );
-    } catch (error) {
-      console.error("Error sending message to content script:", error);
-    }
+    // Send message to content script with proper error handling
+    chrome.tabs.sendMessage(
+      tab.id,
+      {
+        type: "SS_OPEN_MODAL",
+        menuItemId: info.menuItemId,
+      },
+      (response) => {
+        if (chrome.runtime.lastError) {
+          console.error(
+            "Error sending message:",
+            chrome.runtime.lastError.message
+          );
+          // The error is usually harmless - content script might not be ready
+          // or the page might not support the extension
+        }
+      }
+    );
   }
 });
