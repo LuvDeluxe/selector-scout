@@ -53,6 +53,21 @@ chrome.runtime.onInstalled.addListener(() => {
           }
         );
 
+        chrome.contextMenus.create(
+          {
+            id: "generate-puppeteer-snippet",
+            parentId: "selector-scout-parent",
+            title: "Generate Puppeteer Snippet...",
+            contexts: ["all"],
+          },
+          () => {
+            if (chrome.runtime.lastError) {
+              console.error("Error creating Puppeteer menu:");
+              chrome.runtime.lastError;
+            }
+          }
+        );
+
         // New separator
         chrome.contextMenus.create(
           {

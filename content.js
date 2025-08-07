@@ -261,6 +261,10 @@ function handleAction(menuItemId, el) {
         const playwrightSuggestions = generatePlaywrightAssertions(el);
         showModal("Playwright Snippet Suggestions", playwrightSuggestions);
         break;
+      case "generate-puppeteer-snippet":
+        const puppeteerSuggestions = generatePuppeteerAssertions(el);
+        showModal("Puppeteer Snippet Suggestions", puppeteerSuggestions);
+        break;
       case "copy-attribute":
         const attributes = generateAttributeList(el);
         showModal("Copy CSS Selector or Attribute", attributes);
@@ -496,6 +500,74 @@ function generatePlaywrightAssertions(el) {
     suggestions.push({
       display: `await ${locator}.click();`,
       code: `await ${locator}.click();`,
+    });
+  }
+
+  return suggestions;
+}
+
+function generatePuppeteerAssertions(el) {
+  const selector = getCssSelector(el);
+  if (!selector) {
+    return [
+      {
+        display: "❌ Could not generate a reliable selector for this element.",
+        code: "",
+      },
+    ];
+  }
+
+  const tagName = el.tagName.toLowerCase();
+  let suggestions = [
+    {
+      display: `await page.waitForSelector('${selector}')`,
+      code: `await page.waitForSelector('${selector}');`,
+    },
+    {
+      display: `await page.$('${selector}')`,
+      code: `await page.$('${selector}');`,
+    },
+  ];
+
+  if (tagName === "a" && el.hasAttribute("href")) {
+    suggestions.push({
+      display: `.toHaveAttribute('href', ...)`,
+      code: `await (await page.$('${selector}')).evaluate(el => el.getAttribute('href') === '${el.getAttribute(
+        "href"
+      )}');`,
+    });
+  }
+
+  if (el.textContent && el.textContent.trim()) {
+    const text = el.textContent.trim().substring(0, 30);
+    suggestions.push({
+      display: `.toContainText('${text}...')`,
+      code: `await (await page.$('${selector}')).evaluate(el => el.textContent.includes('${el.textContent.trim()}'));`,
+    });
+  }
+
+  if (tagName === "input" || tagName === "textarea") {
+    suggestions.push({
+      display: `.type('your-text')`,
+      code: `await page.type('${selector}', 'your-text-here');`,
+    });
+    if (el.value) {
+      suggestions.push({
+        display: `.toHaveValue(...)`,
+        code: `await (await page.$('${selector}')).evaluate(el => el.value === '${el.value}');`,
+      });
+    }
+  }
+
+  if (el.disabled) {
+    suggestions.push({
+      display: `.toBeDisabled()`,
+      code: `await (await page.$('${selector}')).evaluate(el => el.disabled);`,
+    });
+  } else {
+    suggestions.push({
+      display: `.click()`,
+      code: `await page.click('${selector}');`,
     });
   }
 
