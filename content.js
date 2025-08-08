@@ -7,6 +7,14 @@ function decodeHTMLEntities(str) {
   return txt.value;
 }
 
+// Escape a string for safe inclusion inside single-quoted JS code snippets
+function escapeForSingleQuotedJs(str) {
+  return String(str)
+    .replace(/\\/g, "\\\\")
+    .replace(/'/g, "\\'")
+    .replace(/\n/g, "\\n");
+}
+
 // Inject CSS styles for the modal
 function injectStyles() {
   if (document.getElementById("selector-scout-styles")) return;
@@ -518,11 +526,11 @@ function generatePuppeteerAssertions(el) {
   }
 
   const tagName = el.tagName.toLowerCase();
-  const escapedSelector = selector.replace(/'/g, "\\'");
+  const escapedSelector = escapeForSingleQuotedJs(selector);
   let suggestions = [
     {
-      display: `await page.waitForSelector('${escapedSelector}')`,
-      code: `await page.waitForSelector('${escapedSelector}');`,
+      display: `await page.waitForSelector('${escapedSelector}', { visible: true })`,
+      code: `await page.waitForSelector('${escapedSelector}', { visible: true });`,
     },
     {
       display: `await page.$('${escapedSelector}')`,
@@ -531,19 +539,19 @@ function generatePuppeteerAssertions(el) {
   ];
 
   if (tagName === "a" && el.hasAttribute("href")) {
-    const escapedHref = el.getAttribute("href").replace(/'/g, "\\'");
+    const escapedHref = escapeForSingleQuotedJs(el.getAttribute("href"));
     suggestions.push({
       display: `.toHaveAttribute('href', ...)`,
-      code: `await (await page.$('${escapedSelector}')).evaluate(el => el.getAttribute('href') === '${escapedHref}');`,
+      code: `await page.$eval('${escapedSelector}', (el) => el.getAttribute('href') === '${escapedHref}');`,
     });
   }
 
   if (el.textContent && el.textContent.trim()) {
     const text = el.textContent.trim().substring(0, 30);
-    const escapedText = el.textContent.trim().replace(/'/g, "\\'");
+    const escapedText = escapeForSingleQuotedJs(el.textContent.trim());
     suggestions.push({
       display: `.toContainText('${text}...')`,
-      code: `await (await page.$('${escapedSelector}')).evaluate(el => el.textContent.includes('${escapedText}'));`,
+      code: `await page.$eval('${escapedSelector}', (el) => (el.textContent || '').includes('${escapedText}'));`,
     });
   }
 
@@ -553,10 +561,10 @@ function generatePuppeteerAssertions(el) {
       code: `await page.type('${escapedSelector}', 'your-text-here');`,
     });
     if (el.value) {
-      const escapedValue = el.value.replace(/'/g, "\\'");
+      const escapedValue = escapeForSingleQuotedJs(el.value);
       suggestions.push({
         display: `.toHaveValue(...)`,
-        code: `await (await page.$('${escapedSelector}')).evaluate(el => el.value === '${escapedValue}');`,
+        code: `await page.$eval('${escapedSelector}', (el) => el.value === '${escapedValue}');`,
       });
     }
   }
@@ -564,7 +572,7 @@ function generatePuppeteerAssertions(el) {
   if (el.disabled) {
     suggestions.push({
       display: `.toBeDisabled()`,
-      code: `await (await page.$('${escapedSelector}')).evaluate(el => el.disabled);`,
+      code: `await page.$eval('${escapedSelector}', (el) => el.disabled);`,
     });
   } else {
     suggestions.push({
