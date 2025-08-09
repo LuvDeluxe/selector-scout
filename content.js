@@ -55,6 +55,7 @@ function injectStyles() {
       box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
       border: 1px solid #e0e0e0;
       overflow: hidden;
+  transition: background-color 0.35s ease, color 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease;
     }
 
     #selector-scout-modal .ssm-header {
@@ -107,6 +108,7 @@ function injectStyles() {
       white-space: pre-wrap;
       word-break: break-word;
       color: #333333;
+  transition: background-color 0.35s ease, color 0.35s ease, border-color 0.35s ease;
     }
 
     #selector-scout-modal .ssm-body li:last-child {
@@ -247,6 +249,19 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
 
     handleAction(request.menuItemId, scoutLastTarget);
+    sendResponse({ success: true });
+    return; // prevent falling through
+  }
+
+  if (request.type === "SS_TOGGLE_DARK_MODE") {
+    const modal = document.getElementById("selector-scout-modal");
+    if (modal) {
+      if (request.enabled) {
+        modal.classList.add("ssm-dark-mode");
+      } else {
+        modal.classList.remove("ssm-dark-mode");
+      }
+    }
     sendResponse({ success: true });
   }
 });

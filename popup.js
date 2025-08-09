@@ -1,24 +1,54 @@
 document.addEventListener("DOMContentLoaded", () => {
-  // Load the users saved preference for dark mode from storage
   const darkModeToggle = document.getElementById("darkModeToggle");
 
-  chrome.storage.sync.get("darkMode", (data) => {
-    // Default to light mode (unchecked) unless darkMode is explicitly set to true
-    if (data.darkMode === true) {
-      darkModeToggle.checked = true;
+  chrome.storage.sync.get(["darkMode", "_themeInitialized"], (data) => {
+    if (typeof data.darkMode === "boolean") {
+      // Existing preference
+      darkModeToggle.checked = data.darkMode;
+      document.body.classList.toggle("dark-mode", data.darkMode);
     } else {
-      // Ensure toggle is unchecked for light mode (default)
-      darkModeToggle.checked = false;
-      // Clear any existing darkMode setting to ensure clean default state
-      if (data.darkMode !== undefined) {
-        chrome.storage.sync.remove("darkMode");
-      }
+      // First run: detect system preference
+      const systemPrefersDark =
+        window.matchMedia &&
+        window.matchMedia("(prefers-color-scheme: dark)").matches;
+      darkModeToggle.checked = systemPrefersDark;
+      document.body.classList.toggle("dark-mode", systemPrefersDark);
+      chrome.storage.sync.set({
+        darkMode: systemPrefersDark,
+        _themeInitialized: true,
+      });
     }
   });
 
-  // Add a listener for when the user clicks the toggle
+  // Listen for manual toggle changes
   darkModeToggle.addEventListener("change", () => {
-    // Save the new setting to storage
-    chrome.storage.sync.set({ darkMode: darkModeToggle.checked });
+    const enabled = darkModeToggle.checked;
+    document.body.classList.toggle("dark-mode", enabled);
+    chrome.storage.sync.set({ darkMode: enabled, _themeInitialized: true });
+
+    // Broadcast to content scripts
+    try {
+      chrome.runtime.sendMessage({ type: "SS_TOGGLE_DARK_MODE", enabled });
+    } catch (e) {
+      /* ignore */
+    }
+  });
+
+  // Optional: react to live system changes ONLY if user hasn't manually overridden.
+  const mq = window.matchMedia("(prefers-color-scheme: dark)");
+  mq.addEventListener("change", (e) => {
+    chrome.storage.sync.get(["darkMode", "_themeInitialized"], (data) => {
+      if (typeof data.darkMode === "boolean") return;
+      const prefersDark = e.matches;
+      darkModeToggle.checked = prefersDark;
+      document.body.classList.toggle("dark-mode", prefersDark);
+      chrome.storage.sync.set({ darkMode: prefersDark });
+      try {
+        chrome.runtime.sendMessage({
+          type: "SS_TOGGLE_DARK_MODE",
+          enabled: prefersDark,
+        });
+      } catch (err) {}
+    });
   });
 });
