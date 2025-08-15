@@ -31,6 +31,31 @@
       "128": "images/icon128.png"
     }
   },
+  "commands": {
+    "toggle-dark-mode": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+D",
+        "mac": "Command+Shift+D"
+      },
+      "description": "Toggle Selector Scout dark mode"
+    },
+    "open-selector-scout-modal": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+S",
+        "mac": "Command+Shift+S"
+      },
+      "description": "Open Selector Scout modal for last captured element"
+    },
+    {
+      "copy-css-selector": {
+        "suggested_key": {
+          "default": "Ctrl+Shift+C",
+          "mac": "Command+Shift+C"
+        },
+        "description": "Copy CSS selector of last captured element"
+      }
+    }
+  },
   "icons": {
     "16": "images/icon16.png",
     "48": "images/icon48.png",
