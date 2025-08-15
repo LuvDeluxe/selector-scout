@@ -46,14 +46,12 @@
       },
       "description": "Open Selector Scout modal for last captured element"
     },
-    {
-      "copy-css-selector": {
-        "suggested_key": {
-          "default": "Ctrl+Shift+C",
-          "mac": "Command+Shift+C"
-        },
-        "description": "Copy CSS selector of last captured element"
-      }
+    "copy-css-selector": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+C",
+        "mac": "Command+Shift+C"
+      },
+      "description": "Copy CSS selector of last captured element"
     }
   },
   "icons": {
