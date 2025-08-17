@@ -212,6 +212,38 @@ document.addEventListener(
   true
 );
 
+// Alt + Shift + S -> open modal with last snippet type
+// Alt + Shift + D -> Toggle dark mode locally
+document.addEventListener("keydown", (e) => {
+  // Ignore when typing in inputs / textareas or contenteditable elements
+  const t = e.target;
+
+  if (
+    t &&
+    (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)
+  )
+    return;
+
+  if (e.altKey && e.shiftKey && e.code === "KeyS") {
+    chrome.runtime.sendMessage({
+      type: "SS_OPEN_MODAL",
+      menuItemId: window.scoutLastSnippetType || "generate-playwright-snippet",
+    });
+  }
+
+  if (e.altKey && e.shiftKey && e.code === "KeyD") {
+    chrome.storage.sync.get("darkMode", (data) => {
+      const next = !data.darkMode;
+      chrome.storage.sync.set({ darkMode: next }, () => {
+        // apply to any open modal immediately
+        const modal = document.getElementById("selector-scout-modal");
+        if (modal) modal.classList.toggle("ssm-dark-mode", next);
+        showToast(`Theme: ${next ? "Dark" : "Light"}`);
+      });
+    });
+  }
+});
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   console.log("Selector Scout: Received message:", request);
 
@@ -263,6 +295,27 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       }
     }
     sendResponse({ success: true });
+  }
+
+  // TODO
+  // Handle a copy selector command from the bg script
+  if (request.type === "SS_COPY_SELECTOR") {
+    // ensure there is last captured element and still exists in the DOM
+    if (!scoutLastTarget || !document.contains(scoutLastTarget)) {
+      showToast("⚠️ No recent element. Right-click an element first.");
+      sendResponse && sendResponse({ success: false, error: "No target" });
+    }
+
+    const sel = getCssSelector(scoutLastTarget);
+    if (sel) {
+      copyToClipboard(sel);
+      showToast("✅ CSS selector copied");
+      sendResponse && sendResponse({ success: true, selector: sel });
+    } else {
+      showToast("❌ Could not build selector");
+      sendResponse && sendResponse({ success: false, error: "No selector" });
+    }
+    return;
   }
 });
 

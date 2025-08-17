@@ -158,3 +158,49 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
     );
   }
 });
+
+// Commands handler: listen to keyboard shortcuts defined in manifest.json
+// chrome.commands.onCommand fires when a user triggers one of the declared shortcuts
+chrome.commands.onCommand.addListener(async (command) => {
+  try {
+    // Get the active tab in the current window to be able to message its content script
+    const [tab] = await chrome.tabs.query({
+      active: true,
+      currentWindow: true,
+    });
+    if (!tab || !tab.id) return;
+
+    switch (command) {
+      // Read current darkMode flag, flip, notify content scripts
+      case "toggle-dark-mode": {
+        chrome.storage.get("darkMode", (data) => {
+          const next = !data.darkMode;
+          chrome.storage.sync.set({ darkMode: next }, () => {
+            chrome.tabs.sendMessage(tab.id, {
+              type: "SS_TOGGLE_DARK_MODE",
+              enabled: next,
+            });
+          });
+        });
+        break;
+      }
+
+      case "open-selector-scout-modal": {
+        // Ask content script to open the modal. menuItemId chooses default action
+        chrome.tabs.sendMessage(tab.id, {
+          type: "SS_OPEN_MODAL",
+          menuItemId: "generate-playwright-snippet",
+        });
+        break;
+      }
+
+      case "copy-css-selector": {
+        chrome.tabs.sendMessage(tab.id, { type: "SS_COPY_SELECTOR" });
+      }
+      default:
+        break;
+    }
+  } catch (err) {
+    console.error("Selector Scout: command handler error", err);
+  }
+});
