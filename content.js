@@ -297,8 +297,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     sendResponse({ success: true });
   }
 
-  // TODO
-  // Handle a copy selector command from the bg script
   if (request.type === "SS_COPY_SELECTOR") {
     // ensure there is last captured element and still exists in the DOM
     if (!scoutLastTarget || !document.contains(scoutLastTarget)) {
