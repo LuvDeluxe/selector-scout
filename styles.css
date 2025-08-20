@@ -1,105 +1,129 @@
 body {
-  width: 280px;
+  width: 500px; /* Increased width to fit more content without cutting off */
+  min-height: 400px;
+  max-height: 600px; /* Respect Chrome popup max height */
+  overflow-y: auto; /* Force vertical scrolling if content exceeds height */
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
     Arial, sans-serif;
-  background-color: #f0f2f5;
-  color: #1c1e21;
+  background-color: #f6f8fa; /* Softer light bg */
+  color: #24292e; /* Better text color for light mode */
   margin: 0;
-  padding: 16px;
+  padding: 20px; /* More padding */
   font-size: 14px;
-  /* Smooth theme transition */
+  line-height: 1.5;
   transition: background-color 0.35s ease, color 0.35s ease;
+  box-sizing: border-box;
 }
 
 /* Dark mode base */
 body.dark-mode {
-  background-color: #1e1f22;
-  color: #e6e6e6;
+  background-color: #0d1117; /* GitHub-like dark bg */
+  color: #c9d1d9; /* Light text for dark mode */
 }
 
 .container {
   display: flex;
   flex-direction: column;
-  text-align: center;
+  text-align: left; /* Left-align for better readability */
+  gap: 16px; /* Space between sections */
 }
 
 .header {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  margin-bottom: 12px;
+  gap: 12px;
+  margin-bottom: 16px;
 }
 
 .header img {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
 }
 
 h1 {
-  font-size: 20px;
+  font-size: 22px;
   margin: 0;
-  color: #1877f2;
+  color: #0366d6; /* Blue accent */
+}
+
+body.dark-mode h1 {
+  color: #58a6ff;
 }
 
 p {
-  line-height: 1.5;
   margin: 0 0 16px 0;
   text-align: center;
+  color: #586069; /* Subtle gray */
+}
+
+body.dark-mode p {
+  color: #8b949e;
 }
 
 .settings-section {
-  background-color: #fff;
+  background-color: #ffffff;
   border-radius: 8px;
-  padding: 12px;
-  margin-bottom: 16px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  padding: 16px; /* More padding */
+  margin-bottom: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   transition: background-color 0.35s ease, box-shadow 0.35s ease,
     border-color 0.35s ease;
+  border: 1px solid #e1e4e8;
 }
 
 body.dark-mode .settings-section {
-  background-color: #2a2c30;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
-  border: 1px solid #333;
+  background-color: #161b22;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  border: 1px solid #30363d;
 }
 
 .setting-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  margin-bottom: 12px; /* Space between rows */
 }
 
 footer {
-  border-top: 1px solid #ddd;
-  padding-top: 12px;
+  border-top: 1px solid #e1e4e8;
+  padding-top: 16px;
+  text-align: center;
+  font-size: 12px;
+  color: #586069;
 }
 
 body.dark-mode footer {
-  border-top: 1px solid #333;
+  border-top: 1px solid #30363d;
+  color: #8b949e;
 }
 
 a {
-  color: #1877f2;
+  color: #0366d6;
   text-decoration: none;
   font-weight: 600;
-  transition: color 0.35s ease;
+  transition: color 0.2s ease;
 }
 
 body.dark-mode a {
-  color: #4dabf7;
+  color: #58a6ff;
 }
 
 a:hover {
   text-decoration: underline;
+  color: #005cc5;
 }
 
-/* Toggle switch */
+body.dark-mode a:hover {
+  color: #4493f8;
+}
+
+/* Toggle switch - larger for better UX */
 .switch {
   position: relative;
   display: inline-block;
-  width: 44px;
-  height: 24px;
+  width: 50px;
+  height: 28px;
 }
 
 .switch input {
@@ -113,35 +137,323 @@ a:hover {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: #ccc;
+  background-color: #d1d5da;
   transition: 0.4s;
-  border-radius: 24px;
+  border-radius: 28px;
+  border: 1px solid #e1e4e8;
 }
 
 body.dark-mode .slider {
-  background-color: #555;
+  background-color: #21262d;
+  border: 1px solid #30363d;
 }
 
 .slider:before {
   position: absolute;
   content: "";
-  height: 18px;
-  width: 18px;
+  height: 22px;
+  width: 22px;
   left: 3px;
   bottom: 3px;
-  background-color: white;
+  background-color: #ffffff;
   transition: 0.4s;
   border-radius: 50%;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 input:checked + .slider {
-  background-color: #2196f3;
+  background-color: #0366d6;
+  border-color: #0366d6;
 }
 
 body.dark-mode input:checked + .slider {
-  background-color: #1d72d8;
+  background-color: #58a6ff;
+  border-color: #58a6ff;
 }
 
 input:checked + .slider:before {
-  transform: translateX(20px);
+  transform: translateX(22px);
+}
+
+/* Improved findings styling */
+.finding {
+  margin: 12px 0; /* More vertical space */
+  padding: 12px; /* More internal padding */
+  border-radius: 6px;
+  border-left: 6px solid;
+  transition: background-color 0.35s ease;
+}
+
+.severity-high {
+  border-left-color: #d73a49;
+  background-color: #fdecee; /* Softer pink for high */
+}
+
+body.dark-mode .severity-high {
+  background-color: #442425; /* Darker red bg */
+  color: #f0c6c6;
+}
+
+.severity-medium {
+  border-left-color: #dbab09;
+  background-color: #fffceb; /* Softer yellow */
+}
+
+body.dark-mode .severity-medium {
+  background-color: #3f3b1e;
+  color: #f0e3b3;
+}
+
+.severity-low {
+  border-left-color: #28a745;
+  background-color: #e6ffed; /* Softer green */
+}
+
+body.dark-mode .severity-low {
+  background-color: #1e3f2e;
+  color: #c2e6c7;
+}
+
+.finding-display {
+  font-weight: 600;
+  font-size: 15px;
+  margin-bottom: 6px;
+  color: #24292e;
+}
+
+body.dark-mode .finding-display {
+  color: #c9d1d9;
+}
+
+.finding-severity {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  color: #586069;
+}
+
+body.dark-mode .finding-severity {
+  color: #8b949e;
+}
+
+.finding-suggestion {
+  font-size: 13px;
+  color: #586069;
+}
+
+body.dark-mode .finding-suggestion {
+  color: #8b949e;
+}
+
+/* Element results */
+.element-header {
+  font-weight: 600;
+  font-size: 15px;
+  margin-bottom: 12px;
+  padding: 10px;
+  background-color: #f6f8fa;
+  border-radius: 6px;
+  word-break: break-word; /* Better wrapping for long selectors/URLs */
+  cursor: pointer; /* Indicate clickable/interactive */
+  transition: background-color 0.2s ease;
+}
+
+.element-header:hover {
+  background-color: #ebeef2;
+}
+
+body.dark-mode .element-header {
+  background-color: #161b22;
+  color: #c9d1d9;
+}
+
+body.dark-mode .element-header:hover {
+  background-color: #21262d;
+}
+
+.element-result {
+  margin-bottom: 20px; /* More space between elements */
+  border: 1px solid #e1e4e8;
+  border-radius: 8px;
+  padding: 16px; /* More padding */
+  background-color: #ffffff;
+}
+
+body.dark-mode .element-result {
+  border: 1px solid #30363d;
+  background-color: #0d1117;
+}
+
+/* Table-specific styles */
+.summary {
+  margin-bottom: 16px;
+  padding: 12px;
+  background-color: #f6f8fa;
+  border-radius: 6px;
+}
+
+body.dark-mode .summary {
+  background-color: #161b22;
+}
+
+#a11y-results {
+  max-height: 500px; /* Limit height to trigger scrolling within popup */
+  overflow-y: auto; /* Enable vertical scrolling for results */
+  padding-right: 8px; /* Space for scrollbar */
+}
+
+.results-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 8px; /* Space between rows */
+  margin-bottom: 16px;
+  table-layout: auto; /* Allow columns to adjust naturally */
+}
+
+.results-table th {
+  text-align: left;
+  padding: 12px 8px; /* Reduced horizontal padding for wider columns */
+  background-color: #f6f8fa;
+  font-weight: 600;
+  color: #24292e;
+  border-bottom: 2px solid #e1e4e8;
+  white-space: nowrap; /* Prevent header wrapping */
+}
+
+body.dark-mode .results-table th {
+  background-color: #161b22;
+  color: #c9d1d9;
+  border-bottom: 2px solid #30363d;
+}
+
+.results-table td {
+  padding: 12px 8px; /* Reduced horizontal padding */
+  vertical-align: top;
+  border-top: 1px solid #e1e4e8;
+  border-bottom: 1px solid #e1e4e8;
+  background-color: #ffffff; /* White cells for clarity */
+  word-break: break-word; /* Wrap long words in cells */
+  hyphens: auto; /* Auto hyphenation for better wrapping */
+  white-space: normal; /* Allow text to wrap */
+}
+
+body.dark-mode .results-table td {
+  border-top: 1px solid #30363d;
+  border-bottom: 1px solid #30363d;
+  background-color: #0d1117;
+}
+
+/* Make suggestion column wider */
+.results-table td:nth-child(4) {
+  /* Suggestion column */
+  min-width: 150px; /* Minimum width to prevent cutting off */
+}
+
+/* Examples column */
+.results-table td:nth-child(5) {
+  min-width: 120px;
+}
+
+/* Override severity backgrounds for table rows */
+.results-table tr.severity-high {
+  background-color: #fdecee; /* Soft pink */
+}
+
+body.dark-mode .results-table tr.severity-high {
+  background-color: #442425;
+}
+
+.results-table tr.severity-medium {
+  background-color: #fffceb; /* Soft yellow */
+}
+
+body.dark-mode .results-table tr.severity-medium {
+  background-color: #3f3b1e;
+}
+
+/* Ensure text is fully opaque and readable */
+.results-table td,
+.results-table th {
+  color: inherit; /* No fading */
+  opacity: 1 !important;
+}
+
+/* Examples list in table */
+.results-table ul {
+  margin: 0;
+  padding-left: 20px;
+  list-style-type: disc;
+}
+
+.results-table li {
+  word-break: break-word;
+  font-size: 13px;
+}
+
+/* Button container for centering */
+.button-container {
+  display: flex;
+  justify-content: center;
+  gap: 12px; /* Space between buttons if side-by-side */
+  margin-top: 12px;
+  flex-wrap: wrap; /* Allow wrapping if needed */
+}
+
+/* Buttons */
+button {
+  padding: 10px 16px;
+  background-color: #0366d6;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background-color 0.2s ease;
+  margin-bottom: 5px; /* 4-5px padding below each button */
+}
+
+button:hover {
+  background-color: #005cc5;
+}
+
+body.dark-mode button {
+  background-color: #58a6ff;
+}
+
+body.dark-mode button:hover {
+  background-color: #4493f8;
+}
+
+/* Specific button styles */
+#scanA11yBtn {
+  display: block;
+  margin: 0 auto 5px auto; /* Center and 4-5px below */
+}
+
+/* Scrollbar styling for better visibility */
+body::-webkit-scrollbar,
+#a11y-results::-webkit-scrollbar {
+  width: 8px;
+}
+
+body::-webkit-scrollbar-track,
+#a11y-results::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+body.dark-mode::-webkit-scrollbar-track,
+body.dark-mode #a11y-results::-webkit-scrollbar-track {
+  background: #21262d;
+}
+
+body::-webkit-scrollbar-thumb,
+#a11y-results::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+body::-webkit-scrollbar-thumb:hover,
+#a11y-results::-webkit-scrollbar-thumb:hover {
+  background: #555;
 }
