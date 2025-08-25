@@ -142,7 +142,7 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
     info.menuItemId.startsWith("generate-")
   ) {
     // Send message to content script with proper error handling
-    chrome.tabs.sendMessage(
+    safeSendMessageToTab(
       tab.id,
       {
         type: "SS_OPEN_MODAL",
@@ -161,3 +161,26 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
     );
   }
 });
+
+function safeSendMessageToTab(tabId, message, optionsOrCallback) {
+  // Normalize params: chrome.tabs.sendMessage signature can be (tabId, message, callback)
+  const callback =
+    typeof optionsOrCallback === "function" ? optionsOrCallback : undefined;
+
+  if (typeof tabId !== "number" || tabId < 0) {
+    console.error("Invalid tabId for sendMessage:", tabId, "Message:", message);
+    // Fallback: find active tab in current window
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      const fallbackId = tabs && tabs[0] && tabs[0].id;
+      if (typeof fallbackId === "number" && fallbackId >= 0) {
+        chrome.tabs.sendMessage(fallbackId, message, callback);
+      } else {
+        console.error("safeSendMessageToTab: no valid active tab found.");
+        if (callback) callback({ error: "no_valid_tab" });
+      }
+    });
+    return;
+  }
+
+  chrome.tabs.sendMessage(tabId, message, callback);
+}

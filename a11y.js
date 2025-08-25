@@ -43,22 +43,33 @@ function getDescriptor(el) {
   if (el.textContent && el.textContent.trim()) {
     fallbackInfo = `"${el.textContent.trim().substring(0, 30)}"`;
   } else if (el.href) {
-    fallbackInfo = el.href;
-  } else if (el.getAttribute("aria-label")) {
-    fallbackInfo = `aria-label="${el
-      .getAttribute("aria-label")
-      .substring(0, 20)}"`;
+    try {
+      const u = new URL(el.getAttribute("href"), location.href);
+      const short = `${u.hostname}${u.pathname}`.replace(/\/$/, "");
+      fallbackInfo =
+        short.length > 60 ? `${short.slice(0, 57)}...` : short || u.hostname;
+    } catch (e) {
+      const raw = el.getAttribute("href") || "";
+      fallbackInfo = raw.length > 60 ? `${raw.slice(0, 57)}...` : raw;
+    }
   } else {
-    const siblings = Array.from(el.parentNode?.children || []).filter(
-      (child) => child.tagName === el.tagName
-    );
-    const index = siblings.indexOf(el);
-    fallbackInfo = `(${index + 1} of ${siblings.length})`;
+    // use :nth-of-type(...) (no extra tag) to avoid "tag tag:nth-of-type(...)"
+    let nth = 1;
+    if (el.parentNode) {
+      const siblings = Array.from(el.parentNode.children).filter(
+        (s) => s.tagName === el.tagName
+      );
+      nth = siblings.length > 1 ? siblings.indexOf(el) + 1 : 1;
+    }
+    fallbackInfo = `:nth-of-type(${nth})`;
   }
 
   return {
     tag,
-    selector: `${tag}${fallbackInfo ? ` ${fallbackInfo}` : ""}`,
+    // concatenate tag + suffix without extra space when suffix begins with ':'
+    selector: `${tag}${
+      fallbackInfo.startsWith(":") ? fallbackInfo : ` ${fallbackInfo}`
+    }`.trim(),
     id: null,
     classes: "",
     text: el.textContent?.trim().substring(0, 50) || "",
@@ -176,32 +187,48 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
   nodeList.forEach((el) => {
     if (scope === "visible" && !isVisible(el)) return;
+
     const findings = generateAccessibilityInfo(el);
     if (findings && findings.length) {
-      const weight = { high: 3, medium: 2, low: 1, info: 0 };
-      findings.sort(
-        (a, b) => (weight[b.severity] || 0) - (weight[a.severity] || 0)
-      );
-      results.push({ element: getDescriptor(el), findings });
+      const descriptor = getDescriptor(el);
 
-      // Group for summary
-      findings.forEach((finding) => {
-        const key = finding.display;
+      findings.forEach((f) => {
+        // use a stable key per issue type to group correctly
+        const key = `${f.display}|||${f.suggestion}`;
+
         if (!groupedResults[key]) {
           groupedResults[key] = {
-            display: finding.display,
-            severity: finding.severity,
-            suggestion: finding.suggestion,
+            display: f.display,
+            severity: f.severity || "low",
+            suggestion: f.suggestion || "",
             count: 0,
             examples: [],
           };
         }
-        groupedResults[key].count++;
-        if (groupedResults[key].examples.length < 5) {
-          groupedResults[key].examples.push({
-            selector: getDescriptor(el).selector,
-          });
+
+        groupedResults[key].count += 1;
+
+        // Push a plain example object with selector and optional short text only.
+        const exampleObj = {
+          selector: descriptor.selector,
+          text: descriptor.text || "",
+          id: descriptor.id || null,
+          classes: descriptor.classes || "",
+        };
+
+        // dedupe by selector and cap to 10
+        const exists = groupedResults[key].examples.some(
+          (e) => e.selector === exampleObj.selector
+        );
+        if (!exists && groupedResults[key].examples.length < 10) {
+          groupedResults[key].examples.push(exampleObj);
         }
+
+        // keep full results list if you need it elsewhere
+        results.push({
+          selector: descriptor.selector,
+          findings: [f],
+        });
       });
     }
   });
