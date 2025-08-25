@@ -91,6 +91,7 @@ footer {
   text-align: center;
   font-size: 12px;
   color: #586069;
+  padding-bottom: 15px;
 }
 
 body.dark-mode footer {
@@ -394,7 +395,7 @@ body.dark-mode .results-table tr.severity-medium {
 /* Button container for centering */
 .button-container {
   display: flex;
-  justify-content: center;
+  justify-content: left;
   gap: 12px; /* Space between buttons if side-by-side */
   margin-top: 12px;
   flex-wrap: wrap; /* Allow wrapping if needed */
@@ -428,7 +429,7 @@ body.dark-mode button:hover {
 /* Specific button styles */
 #scanA11yBtn {
   display: block;
-  margin: 0 auto 5px auto; /* Center and 4-5px below */
+  margin: 0 auto 20px auto;
 }
 
 /* Scrollbar styling for better visibility */
@@ -456,4 +457,20 @@ body::-webkit-scrollbar-thumb,
 body::-webkit-scrollbar-thumb:hover,
 #a11y-results::-webkit-scrollbar-thumb:hover {
   background: #555;
+}
+
+h3 {
+  text-align: center;
+}
+
+.totalissues {
+  font-weight: 700;
+}
+
+.highseverity {
+  color: #f0c6c6 !important;
+}
+
+.mediumseverity {
+  color: #f0e3b3 !important;
 }
