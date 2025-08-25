@@ -127,9 +127,9 @@ function displayA11yResults(data) {
   summaryDiv.className = "summary";
   summaryDiv.innerHTML = `
     <h3>Scan Summary</h3>
-    <p>Total issues: ${data.summary.totalIssues}</p>
-    <p>High severity: ${data.summary.highCount}</p>
-    <p>Medium severity: ${data.summary.mediumCount}</p>
+    <p class="totalissues">Total issues: ${data.summary.totalIssues}</p>
+    <p class="highseverity">High severity: ${data.summary.highCount}</p>
+    <p class="mediumseverity">Medium severity: ${data.summary.mediumCount}</p>
   `;
   container.appendChild(summaryDiv);
 
