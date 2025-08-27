@@ -107,15 +107,15 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // document.addEventListener(
-  //   "contextmenu",
-  //   (e) => {
-  //     e.preventDefault();
-  //     e.stopImmediatePropagation();
-  //     return false;
-  //   },
-  //   true
-  // );
+  document.addEventListener(
+    "contextmenu",
+    (e) => {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      return false;
+    },
+    true
+  );
 });
 
 function displayA11yResults(data) {
@@ -212,4 +212,43 @@ function displayA11yResults(data) {
   buttonContainer.appendChild(hideBtn);
 
   container.appendChild(buttonContainer);
+}
+
+async function isInjectableUrl(url) {
+  if (!url) return false;
+  if (
+    url.startsWith("chrome://") ||
+    url.startsWith("about:") ||
+    url.startsWith("chrome-extension://") ||
+    url.includes("chrome.google.com/webstore")
+  ) {
+    return false;
+  }
+  return /^https?:\/\//.test(url);
+}
+
+async function runScanFromPopup() {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  const url = tab?.url || "";
+  if (!(await isInjectableUrl(url))) {
+    console.warn("Cannot inject into this page:", url);
+    return;
+  }
+
+  try {
+    await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      files: ["content.js"],
+    });
+  } catch (err) {
+    console.error("Script injection failed:", err);
+    return;
+  }
+
+  try {
+    const response = await chrome.tabs.sendMessage(tab.id, { action: "scan" });
+    console.log("scan response", response);
+  } catch (err) {
+    console.error("Could not send message to content script:", err);
+  }
 }

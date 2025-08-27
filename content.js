@@ -244,6 +244,22 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (!msg || msg.action !== "scan") return;
+  doScan()
+    .then((result) => {
+      sendResponse({ ok: true, result });
+    })
+    .catch((err) => {
+      sendResponse({ ok: false, error: err?.message || String(err) });
+    });
+  return true;
+});
+
+async function doScan() {
+  return { findings: [] };
+}
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   console.log("Selector Scout: Received message:", request);
 
