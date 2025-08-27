@@ -107,15 +107,15 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  document.addEventListener(
-    "contextmenu",
-    (e) => {
-      e.preventDefault();
-      e.stopImmediatePropagation();
-      return false;
-    },
-    true
-  );
+  // document.addEventListener(
+  //   "contextmenu",
+  //   (e) => {
+  //     e.preventDefault();
+  //     e.stopImmediatePropagation();
+  //     return false;
+  //   },
+  //   true
+  // );
 });
 
 function displayA11yResults(data) {
