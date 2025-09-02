@@ -24,6 +24,23 @@
         <div id="a11y-results" class="results-container"></div>
       </div>
 
+      <div class="bookmarks-section">
+        <h2>Saved Selectors</h2>
+        <div class="bookmark-controls">
+          <input id="selectorInput" placeholder="example: div.card > a" />
+          <button id="saveSelectorBtn">Save</button>
+          <button id="exportBtn">Export (.json)</button>
+          <button id="importBtn">Import</button>
+          <input
+            id="importFileInput"
+            type="file"
+            accept="application/json"
+            style="display: none"
+          />
+        </div>
+        <ul id="bookmarksList" class="bookmarks-list"></ul>
+      </div>
+
       <div class="settings-section">
         <div class="setting-row">
           <span>Dark Mode</span>

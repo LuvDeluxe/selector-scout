@@ -597,3 +597,92 @@ body.dark-mode .results-table tr.severity-low td:nth-child(3) {
   white-space: nowrap;
   border-radius: 6px;
 }
+
+/* Bookmarks UI styling */
+.bookmarks-section {
+  background-color: #ffffff;
+  border-radius: 8px;
+  padding: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e1e4e8;
+}
+
+.bookmark-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.bookmark-controls input#selectorInput {
+  flex: 1 1 auto;
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid #e1e4e8;
+  font-size: 14px;
+}
+
+.bookmark-controls button {
+  height: 40px;
+  padding: 8px 12px;
+}
+
+.bookmark-controls input.invalid {
+  border-color: #d73a49;
+  box-shadow: 0 0 0 4px rgba(215, 58, 73, 0.06);
+}
+
+.bookmarks-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.bookmark {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 6px;
+  border-bottom: 1px solid #f1f1f1;
+}
+
+.bookmark .selector {
+  font-size: 13px;
+  color: #24292e;
+}
+
+/* Dark mode overrides for bookmarks section */
+body.dark-mode .bookmarks-section {
+  background-color: #0d1117;
+  border: 1px solid #30363d;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+}
+
+body.dark-mode .bookmark-controls input#selectorInput {
+  background-color: #0d1117;
+  color: #c9d1d9;
+  border: 1px solid #30363d;
+}
+
+body.dark-mode .bookmark-controls input.invalid {
+  box-shadow: 0 0 0 4px rgba(215, 58, 73, 0.06);
+}
+
+body.dark-mode .bookmarks-list {
+  background-color: transparent;
+}
+
+body.dark-mode .bookmark {
+  border-bottom: 1px solid #21262d;
+}
+
+body.dark-mode .bookmark .selector {
+  color: #c9d1d9;
+}
+
+body.dark-mode .bookmark .stats {
+  color: #8b949e;
+}
