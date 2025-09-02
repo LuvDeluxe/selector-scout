@@ -22,9 +22,18 @@ document.addEventListener("DOMContentLoaded", () => {
     const enabled = darkModeToggle.checked;
     document.body.classList.toggle("dark-mode", enabled);
     chrome.storage.sync.set({ darkMode: enabled, _themeInitialized: true });
-    try {
-      chrome.runtime.sendMessage({ type: "SS_TOGGLE_DARK_MODE", enabled });
-    } catch (e) {}
+    chrome.runtime.sendMessage(
+      { type: "SS_TOGGLE_DARK_MODE", enabled },
+      (resp) => {
+        if (chrome.runtime.lastError) {
+          // No receiver or other error — log for debugging but don't throw
+          console.warn(
+            "SS_TOGGLE_DARK_MODE sendMessage error:",
+            chrome.runtime.lastError.message
+          );
+        }
+      }
+    );
   });
 
   const mq = window.matchMedia("(prefers-color-scheme: dark)");
@@ -35,12 +44,17 @@ document.addEventListener("DOMContentLoaded", () => {
       darkModeToggle.checked = prefersDark;
       document.body.classList.toggle("dark-mode", prefersDark);
       chrome.storage.sync.set({ darkMode: prefersDark });
-      try {
-        chrome.runtime.sendMessage({
-          type: "SS_TOGGLE_DARK_MODE",
-          enabled: prefersDark,
-        });
-      } catch (err) {}
+      chrome.runtime.sendMessage(
+        { type: "SS_TOGGLE_DARK_MODE", enabled: prefersDark },
+        (resp) => {
+          if (chrome.runtime.lastError) {
+            console.warn(
+              "SS_TOGGLE_DARK_MODE sendMessage error:",
+              chrome.runtime.lastError.message
+            );
+          }
+        }
+      );
     });
   });
 
@@ -245,12 +259,17 @@ async function runScanFromPopup() {
     return;
   }
 
-  try {
-    const response = await chrome.tabs.sendMessage(tab.id, { action: "scan" });
+  // Use callback form and check chrome.runtime.lastError to avoid uncaught promise
+  chrome.tabs.sendMessage(tab.id, { action: "scan" }, (response) => {
+    if (chrome.runtime.lastError) {
+      console.warn(
+        "sendMessage(scan) error:",
+        chrome.runtime.lastError.message
+      );
+      return;
+    }
     console.log("scan response", response);
-  } catch (err) {
-    console.error("Could not send message to content script:", err);
-  }
+  });
 }
 
 // Utility: generate compact unique id
