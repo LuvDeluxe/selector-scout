@@ -1,16 +1,26 @@
-// displayA11yResults removed from content script to avoid duplication.
-// Rendering is handled by the popup (popup.js). The content script only
-// collects and returns data via messaging.
 console.log("a11y.js injected and starting...");
 
 // Helper functions
 function isVisible(el) {
+  // More comprehensive visibility check
+  if (!el || el.nodeType !== Node.ELEMENT_NODE) return false;
+
+  const rect = el.getBoundingClientRect();
   const style = window.getComputedStyle(el);
+
   return (
+    rect.width > 0 &&
+    rect.height > 0 &&
     style.display !== "none" &&
     style.visibility !== "hidden" &&
-    style.opacity !== "0" &&
-    el.offsetParent !== null
+    parseFloat(style.opacity) > 0 &&
+    // Element must be within viewport or close to it
+    rect.bottom >= -100 &&
+    rect.right >= -100 &&
+    rect.top <=
+      (window.innerHeight || document.documentElement.clientHeight) + 100 &&
+    rect.left <=
+      (window.innerWidth || document.documentElement.clientWidth) + 100
   );
 }
 
@@ -41,7 +51,8 @@ function getDescriptor(el) {
   let fallbackInfo = "";
 
   if (el.textContent && el.textContent.trim()) {
-    fallbackInfo = `"${el.textContent.trim().substring(0, 30)}"`;
+    const text = el.textContent.trim().substring(0, 30);
+    fallbackInfo = `"${text}"`;
   } else if (el.href) {
     try {
       const u = new URL(el.getAttribute("href"), location.href);
@@ -53,7 +64,7 @@ function getDescriptor(el) {
       fallbackInfo = raw.length > 60 ? `${raw.slice(0, 57)}...` : raw;
     }
   } else {
-    // use :nth-of-type(...) (no extra tag) to avoid "tag tag:nth-of-type(...)"
+    // Use nth-of-type for position-based selection
     let nth = 1;
     if (el.parentNode) {
       const siblings = Array.from(el.parentNode.children).filter(
@@ -66,7 +77,6 @@ function getDescriptor(el) {
 
   return {
     tag,
-    // concatenate tag + suffix without extra space when suffix begins with ':'
     selector: `${tag}${
       fallbackInfo.startsWith(":") ? fallbackInfo : ` ${fallbackInfo}`
     }`.trim(),
@@ -83,20 +93,27 @@ function generateAccessibilityInfo(el) {
   // Check images
   if (tag === "img") {
     const alt = el.getAttribute("alt");
+    const src = el.getAttribute("src");
+
     if (alt === null || alt === undefined) {
       findings.push({
-        display: "MISSING ALT",
+        display: "MISSING ALT ATTRIBUTE",
         severity: "high",
         suggestion:
           'Add alt attribute. Use alt="" for decorative images or descriptive text for informative images.',
       });
-    } else if (alt.trim() === "") {
-      // Empty alt is okay for decorative images, but flag it as info
+    } else if (
+      alt.trim() === "" &&
+      src &&
+      !src.includes("spacer") &&
+      !src.includes("pixel")
+    ) {
+      // Empty alt might be suspicious unless it's clearly decorative
       findings.push({
-        display: "EMPTY ALT",
+        display: "EMPTY ALT ATTRIBUTE",
         severity: "medium",
         suggestion:
-          'If decorative keep alt=""; if informative replace with concise alt text.',
+          'Verify if image is decorative (keep alt="") or informative (add descriptive alt text).',
       });
     }
   }
@@ -106,65 +123,223 @@ function generateAccessibilityInfo(el) {
     const href = el.getAttribute("href");
     const text = el.textContent?.trim();
     const ariaLabel = el.getAttribute("aria-label");
+    const ariaLabelledby = el.getAttribute("aria-labelledby");
 
-    if (!text && !ariaLabel) {
+    // Check for accessible name
+    if (!text && !ariaLabel && !ariaLabelledby) {
       findings.push({
-        display: "NO ACCESSIBLE NAME",
+        display: "LINK WITH NO ACCESSIBLE NAME",
         severity: "high",
         suggestion:
-          "Provide readable text content or aria-label/aria-labelledby referencing visible text.",
+          "Provide readable text content, aria-label, or aria-labelledby referencing visible text.",
       });
     }
 
+    // Check for meaningful href
     if (href === "#" || href === "javascript:void(0)" || href === "") {
       findings.push({
-        display: "PLACEHOLDER HREF",
+        display: "PLACEHOLDER OR EMPTY HREF",
         severity: "medium",
         suggestion:
-          "Use a real URL or use a button element/role for actions; avoid meaningless href='#'.",
+          "Use a real URL or convert to a button element for actions. Avoid href='#' or javascript:void(0).",
+      });
+    }
+
+    // Check for vague link text
+    if (text && /^(click here|read more|more|here|link)$/i.test(text.trim())) {
+      findings.push({
+        display: "VAGUE LINK TEXT",
+        severity: "medium",
+        suggestion:
+          "Use descriptive link text that makes sense out of context. Avoid 'click here', 'read more', etc.",
       });
     }
   }
 
   // Check form inputs
   if (["input", "textarea", "select"].includes(tag)) {
-    const labels = document.querySelectorAll(`label[for="${el.id}"]`);
+    const type = el.getAttribute("type");
+    const id = el.getAttribute("id");
     const ariaLabel = el.getAttribute("aria-label");
     const ariaLabelledby = el.getAttribute("aria-labelledby");
-    const hasLabel =
-      labels.length > 0 || el.closest("label") || ariaLabel || ariaLabelledby;
 
-    if (!hasLabel) {
+    // Find associated labels
+    const labels = id ? document.querySelectorAll(`label[for="${id}"]`) : [];
+    const wrappingLabel = el.closest("label");
+    const hasLabel =
+      labels.length > 0 || wrappingLabel || ariaLabel || ariaLabelledby;
+
+    if (
+      !hasLabel &&
+      type !== "hidden" &&
+      type !== "submit" &&
+      type !== "button"
+    ) {
       findings.push({
-        display: "MISSING LABEL",
+        display: "FORM INPUT WITHOUT LABEL",
         severity: "high",
         suggestion:
-          "Wrap input in <label> or add aria-label/aria-labelledby that points to visible text.",
+          "Associate input with a label element, or add aria-label/aria-labelledby.",
       });
     }
 
-    const text = el.textContent?.trim();
-    if (!text && !ariaLabel && !ariaLabelledby) {
-      findings.push({
-        display: "NO ACCESSIBLE NAME",
-        severity: "high",
-        suggestion:
-          "Provide readable text content or aria-label/aria-labelledby referencing visible text.",
-      });
+    // Check for required inputs without indication
+    if (el.hasAttribute("required") && !el.getAttribute("aria-required")) {
+      const labelText =
+        wrappingLabel?.textContent || labels[0]?.textContent || ariaLabel || "";
+
+      if (
+        labelText &&
+        !labelText.includes("*") &&
+        !labelText.toLowerCase().includes("required")
+      ) {
+        findings.push({
+          display: "REQUIRED FIELD NOT INDICATED",
+          severity: "medium",
+          suggestion:
+            "Indicate required fields visually and programmatically (aria-required='true').",
+        });
+      }
     }
   }
 
   // Check buttons
-  if (tag === "button") {
+  if (
+    tag === "button" ||
+    (tag === "input" && ["button", "submit"].includes(el.getAttribute("type")))
+  ) {
     const text = el.textContent?.trim();
     const ariaLabel = el.getAttribute("aria-label");
+    const ariaLabelledby = el.getAttribute("aria-labelledby");
+    const value = el.getAttribute("value");
 
-    if (!text && !ariaLabel) {
+    if (!text && !ariaLabel && !ariaLabelledby && !value) {
       findings.push({
-        display: "NO ACCESSIBLE NAME",
+        display: "BUTTON WITHOUT ACCESSIBLE NAME",
         severity: "high",
         suggestion:
-          "Provide readable text content or aria-label/aria-labelledby referencing visible text.",
+          "Provide readable button text, value attribute, or aria-label.",
+      });
+    }
+  }
+
+  // Check headings
+  if (/^h[1-6]$/.test(tag)) {
+    const text = el.textContent?.trim();
+    if (!text) {
+      findings.push({
+        display: "EMPTY HEADING",
+        severity: "medium",
+        suggestion:
+          "Headings should contain descriptive text. Remove empty headings or add content.",
+      });
+    }
+
+    // Check heading hierarchy (simplified check)
+    const level = parseInt(tag.charAt(1));
+    const prevHeading = Array.from(
+      document.querySelectorAll("h1, h2, h3, h4, h5, h6")
+    )
+      .reverse()
+      .find(
+        (h) =>
+          h !== el &&
+          h.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING
+      );
+
+    if (prevHeading && level > parseInt(prevHeading.tagName.charAt(1)) + 1) {
+      findings.push({
+        display: "HEADING HIERARCHY SKIP",
+        severity: "medium",
+        suggestion: `Heading levels should not skip. Found ${tag} after ${prevHeading.tagName.toLowerCase()}.`,
+      });
+    }
+  }
+
+  // Check for missing alt on background images with content
+  if (
+    el.style.backgroundImage ||
+    window.getComputedStyle(el).backgroundImage !== "none"
+  ) {
+    const hasText = el.textContent?.trim();
+    const hasAriaLabel = el.getAttribute("aria-label");
+
+    if (!hasText && !hasAriaLabel) {
+      findings.push({
+        display: "BACKGROUND IMAGE WITHOUT TEXT",
+        severity: "medium",
+        suggestion:
+          "Elements with background images should have descriptive text or aria-label.",
+      });
+    }
+  }
+
+  // Check for custom elements or divs/spans used as buttons
+  if (
+    (tag === "div" || tag === "span") &&
+    (el.onclick || el.getAttribute("onclick") || el.style.cursor === "pointer")
+  ) {
+    const hasRole = el.getAttribute("role");
+    const hasTabindex = el.hasAttribute("tabindex");
+
+    if (!hasRole || hasRole !== "button") {
+      findings.push({
+        display: "CLICKABLE ELEMENT WITHOUT BUTTON ROLE",
+        severity: "high",
+        suggestion:
+          "Add role='button' and tabindex='0' to clickable divs/spans, or use a real button element.",
+      });
+    }
+
+    if (!hasTabindex || el.getAttribute("tabindex") < 0) {
+      findings.push({
+        display: "CLICKABLE ELEMENT NOT KEYBOARD ACCESSIBLE",
+        severity: "high",
+        suggestion:
+          "Add tabindex='0' to make clickable elements keyboard accessible.",
+      });
+    }
+  }
+
+  // Check for iframe without title
+  if (tag === "iframe") {
+    const title = el.getAttribute("title");
+    const ariaLabel = el.getAttribute("aria-label");
+
+    if (!title && !ariaLabel) {
+      findings.push({
+        display: "IFRAME WITHOUT TITLE",
+        severity: "medium",
+        suggestion:
+          "Add title attribute or aria-label to describe the iframe content.",
+      });
+    }
+  }
+
+  // Check for tables without proper headers
+  if (tag === "table") {
+    const headers = el.querySelectorAll("th");
+    const caption = el.querySelector("caption");
+
+    if (headers.length === 0) {
+      findings.push({
+        display: "TABLE WITHOUT HEADERS",
+        severity: "high",
+        suggestion:
+          "Use <th> elements to mark table headers for better screen reader support.",
+      });
+    }
+
+    if (
+      !caption &&
+      !el.getAttribute("aria-label") &&
+      !el.getAttribute("aria-labelledby")
+    ) {
+      findings.push({
+        display: "TABLE WITHOUT CAPTION",
+        severity: "medium",
+        suggestion:
+          "Add <caption> element or aria-label to describe the table purpose.",
       });
     }
   }
@@ -172,81 +347,151 @@ function generateAccessibilityInfo(el) {
   return findings;
 }
 
+// Add a ping handler to check if script is loaded
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   console.log("Message received in a11y.js:", msg);
+
+  // Handle ping requests
+  if (msg && msg.type === "SS_PING") {
+    sendResponse({ status: "ready" });
+    return true;
+  }
+
   if (!msg || msg.type !== "SS_RUN_A11Y_SCAN") return;
 
-  const scope = msg.scope || "visible";
-  const results = [];
-  const groupedResults = {};
+  console.log("Starting accessibility scan...");
 
-  const nodeList =
-    scope === "page"
-      ? document.querySelectorAll("body *")
-      : document.querySelectorAll("body *");
+  try {
+    const scope = msg.scope || "visible";
+    const results = [];
+    const groupedResults = {};
 
-  nodeList.forEach((el) => {
-    if (scope === "visible" && !isVisible(el)) return;
+    // Get all elements, but be more selective
+    const allElements = document.querySelectorAll("*");
+    let processedCount = 0;
+    let visibleCount = 0;
 
-    const findings = generateAccessibilityInfo(el);
-    if (findings && findings.length) {
-      const descriptor = getDescriptor(el);
+    console.log(`Found ${allElements.length} total elements`);
 
-      findings.forEach((f) => {
-        // use a stable key per issue type to group correctly
-        const key = `${f.display}|||${f.suggestion}`;
+    allElements.forEach((el) => {
+      processedCount++;
 
-        if (!groupedResults[key]) {
-          groupedResults[key] = {
-            display: f.display,
-            severity: f.severity || "low",
-            suggestion: f.suggestion || "",
-            count: 0,
-            examples: [],
-          };
+      // Skip script, style, meta, and other non-content elements
+      const tag = el.tagName.toLowerCase();
+      if (
+        [
+          "script",
+          "style",
+          "meta",
+          "link",
+          "head",
+          "title",
+          "noscript",
+        ].includes(tag)
+      ) {
+        return;
+      }
+
+      // For visible scope, check visibility
+      if (scope === "visible" && !isVisible(el)) {
+        return;
+      }
+
+      visibleCount++;
+
+      try {
+        const findings = generateAccessibilityInfo(el);
+        if (findings && findings.length > 0) {
+          const descriptor = getDescriptor(el);
+
+          findings.forEach((finding) => {
+            // Create a unique key for grouping similar issues
+            const key = `${finding.display}|||${finding.severity}|||${finding.suggestion}`;
+
+            if (!groupedResults[key]) {
+              groupedResults[key] = {
+                display: finding.display,
+                severity: finding.severity || "low",
+                suggestion: finding.suggestion || "",
+                count: 0,
+                examples: [],
+              };
+            }
+
+            groupedResults[key].count += 1;
+
+            // Add example with deduplication
+            const exampleObj = {
+              selector: descriptor.selector,
+              text: descriptor.text || "",
+              id: descriptor.id || null,
+              classes: descriptor.classes || "",
+            };
+
+            const exists = groupedResults[key].examples.some(
+              (e) => e.selector === exampleObj.selector
+            );
+
+            if (!exists && groupedResults[key].examples.length < 10) {
+              groupedResults[key].examples.push(exampleObj);
+            }
+
+            // Keep individual results for summary calculation
+            results.push({
+              selector: descriptor.selector,
+              findings: [finding],
+            });
+          });
         }
+      } catch (elementError) {
+        console.warn("Error processing element:", elementError, el);
+      }
+    });
 
-        groupedResults[key].count += 1;
+    console.log(
+      `Processed ${processedCount} elements, ${visibleCount} visible, found ${results.length} issues`
+    );
 
-        // Push a plain example object with selector and optional short text only.
-        const exampleObj = {
-          selector: descriptor.selector,
-          text: descriptor.text || "",
-          id: descriptor.id || null,
-          classes: descriptor.classes || "",
-        };
+    // Calculate summary statistics
+    const groupedArray = Object.values(groupedResults);
+    const summary = {
+      totalIssues: results.length,
+      totalGroups: groupedArray.length,
+      highCount: groupedArray
+        .filter((g) => g.severity === "high")
+        .reduce((sum, g) => sum + g.count, 0),
+      mediumCount: groupedArray
+        .filter((g) => g.severity === "medium")
+        .reduce((sum, g) => sum + g.count, 0),
+      lowCount: groupedArray
+        .filter((g) => g.severity === "low")
+        .reduce((sum, g) => sum + g.count, 0),
+    };
 
-        // dedupe by selector and cap to 10
-        const exists = groupedResults[key].examples.some(
-          (e) => e.selector === exampleObj.selector
-        );
-        if (!exists && groupedResults[key].examples.length < 10) {
-          groupedResults[key].examples.push(exampleObj);
-        }
+    console.log("Scan summary:", summary);
+    console.log("Grouped results:", groupedArray);
 
-        // keep full results list if you need it elsewhere
-        results.push({
-          selector: descriptor.selector,
-          findings: [f],
-        });
-      });
-    }
-  });
+    const response = {
+      results: groupedArray,
+      summary,
+      debug: {
+        totalElements: allElements.length,
+        processedElements: processedCount,
+        visibleElements: visibleCount,
+        scope,
+      },
+    };
 
-  const summary = {
-    totalIssues: results.length,
-    highCount: results.filter((r) =>
-      r.findings.some((f) => f.severity === "high")
-    ).length,
-    mediumCount: results.filter((r) =>
-      r.findings.some((f) => f.severity === "medium")
-    ).length,
-    lowCount: results.filter((r) =>
-      r.findings.some((f) => f.severity === "low")
-    ).length,
-  };
+    sendResponse(response);
+    console.log("Accessibility scan complete, response sent");
+  } catch (error) {
+    console.error("Accessibility scan error:", error);
+    sendResponse({
+      error: error.message,
+      results: [],
+      summary: { totalIssues: 0, highCount: 0, mediumCount: 0, lowCount: 0 },
+    });
+  }
 
-  sendResponse({ results: Object.values(groupedResults), summary });
-  console.log("Scan complete, response sent.");
-  return true;
+  return true; // Keep message channel open for async response
 });

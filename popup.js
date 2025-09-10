@@ -26,7 +26,6 @@ document.addEventListener("DOMContentLoaded", () => {
       { type: "SS_TOGGLE_DARK_MODE", enabled },
       (resp) => {
         if (chrome.runtime.lastError) {
-          // No receiver or other error — log for debugging but don't throw
           console.warn(
             "SS_TOGGLE_DARK_MODE sendMessage error:",
             chrome.runtime.lastError.message
@@ -60,64 +59,108 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const scanBtn = document.getElementById("scanA11yBtn");
   if (scanBtn) {
-    scanBtn.addEventListener("click", () => {
-      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        if (!tabs[0]) {
-          console.error("No active tab found.");
-          return;
+    scanBtn.addEventListener("click", async () => {
+      const container = document.getElementById("a11y-results");
+      if (container) {
+        container.innerHTML = "<p>Scanning for accessibility issues...</p>";
+      }
+
+      try {
+        const [tab] = await chrome.tabs.query({
+          active: true,
+          currentWindow: true,
+        });
+
+        if (!tab || !tab.id) {
+          throw new Error("No active tab found");
         }
-        const tabId = tabs[0].id;
-        // Dynamically inject a11y.js to ensure it's loaded
-        chrome.scripting.executeScript(
-          {
-            target: { tabId: tabId },
+
+        // Check if URL is injectable
+        if (!(await isInjectableUrl(tab.url))) {
+          throw new Error(
+            "Cannot scan this page type (chrome://, extension pages, etc.)"
+          );
+        }
+
+        console.log("Starting accessibility scan for tab:", tab.id);
+
+        // First, try to ping the content script to see if it's already loaded
+        let contentScriptReady = false;
+        try {
+          await new Promise((resolve, reject) => {
+            chrome.tabs.sendMessage(tab.id, { type: "SS_PING" }, (response) => {
+              if (chrome.runtime.lastError) {
+                reject(new Error(chrome.runtime.lastError.message));
+              } else {
+                resolve(response);
+              }
+            });
+          });
+          contentScriptReady = true;
+          console.log("Content script already loaded");
+        } catch (e) {
+          console.log("Content script not loaded, will inject");
+        }
+
+        // If content script is not ready, inject it
+        if (!contentScriptReady) {
+          console.log("Injecting a11y.js...");
+          await chrome.scripting.executeScript({
+            target: { tabId: tab.id },
             files: ["a11y.js"],
-          },
-          () => {
-            if (chrome.runtime.lastError) {
-              console.error(
-                "Script injection failed:",
-                chrome.runtime.lastError.message
-              );
-              const container = document.getElementById("a11y-results");
-              if (container) {
-                container.innerHTML =
-                  "<p>Error: Could not inject content script. Check extension permissions or try reloading.</p>";
+          });
+
+          // Wait a bit for the script to initialize
+          await new Promise((resolve) => setTimeout(resolve, 100));
+        }
+
+        // Now send the scan message
+        console.log("Sending scan message...");
+        const response = await new Promise((resolve, reject) => {
+          const timeoutId = setTimeout(() => {
+            reject(new Error("Scan timeout - content script not responding"));
+          }, 10000); // 10 second timeout
+
+          chrome.tabs.sendMessage(
+            tab.id,
+            { type: "SS_RUN_A11Y_SCAN", scope: "visible" },
+            (resp) => {
+              clearTimeout(timeoutId);
+              if (chrome.runtime.lastError) {
+                reject(new Error(chrome.runtime.lastError.message));
+              } else {
+                resolve(resp);
               }
-              return;
             }
-            // Now send the message after injection
-            chrome.tabs.sendMessage(
-              tabId,
-              { type: "SS_RUN_A11Y_SCAN", scope: "visible" },
-              (resp) => {
-                if (chrome.runtime.lastError) {
-                  console.error(
-                    "Message send failed:",
-                    chrome.runtime.lastError.message
-                  );
-                  const container = document.getElementById("a11y-results");
-                  if (container) {
-                    container.innerHTML =
-                      "<p>Error: Content script not responding. Try refreshing the page.</p>";
-                  }
-                  return;
-                }
-                console.log("Accessibility scan results", resp);
-                if (resp && resp.results) {
-                  displayA11yResults(resp);
-                } else {
-                  const container = document.getElementById("a11y-results");
-                  if (container) {
-                    container.innerHTML =
-                      "<p>No results received. Scan may have failed.</p>";
-                  }
-                }
-              }
-            );
-          }
-        );
-      });
+          );
+        });
+
+        console.log("Accessibility scan results:", response);
+
+        if (response && response.results) {
+          displayA11yResults(response);
+        } else {
+          throw new Error("Invalid response from content script");
+        }
+      } catch (error) {
+        console.error("Accessibility scan failed:", error);
+        const container = document.getElementById("a11y-results");
+        if (container) {
+          container.innerHTML = `
+            <div class="error">
+              <h3>Scan Failed</h3>
+              <p><strong>Error:</strong> ${error.message}</p>
+              <p><strong>Troubleshooting:</strong></p>
+              <ul>
+                <li>Try refreshing the page and scanning again</li>
+                <li>Make sure you're on a regular website (not chrome:// or extension pages)</li>
+                <li>Check if the page has finished loading</li>
+              </ul>
+              <button onclick="this.parentElement.parentElement.innerHTML=''">Hide Error</button>
+            </div>
+          `;
+        }
+      }
     });
   }
 
@@ -142,7 +185,13 @@ function displayA11yResults(data) {
   container.innerHTML = "";
 
   if (!data.results || data.results.length === 0) {
-    container.innerHTML = "<p>No accessibility issues found!</p>";
+    container.innerHTML = `
+      <div class="success">
+        <h3>✓ Great News!</h3>
+        <p>No accessibility issues found in the visible elements on this page.</p>
+        <small>Note: This scan checks common issues like missing alt text, unlabeled form inputs, and missing link text.</small>
+      </div>
+    `;
     return;
   }
 
@@ -150,10 +199,21 @@ function displayA11yResults(data) {
   const summaryDiv = document.createElement("div");
   summaryDiv.className = "summary";
   summaryDiv.innerHTML = `
-    <h3>Scan Summary</h3>
-    <p class="totalissues">Total issues: ${data.summary.totalIssues}</p>
-    <p class="highseverity">High severity: ${data.summary.highCount}</p>
-    <p class="mediumseverity">Medium severity: ${data.summary.mediumCount}</p>
+    <h3>Accessibility Scan Results</h3>
+    <div class="summary-stats">
+      <span class="total-issues">Total issues: ${
+        data.summary.totalIssues
+      }</span>
+      <span class="high-severity">High severity: ${
+        data.summary.highCount || 0
+      }</span>
+      <span class="medium-severity">Medium severity: ${
+        data.summary.mediumCount || 0
+      }</span>
+      <span class="low-severity">Low severity: ${
+        data.summary.lowCount || 0
+      }</span>
+    </div>
   `;
   container.appendChild(summaryDiv);
 
@@ -163,43 +223,58 @@ function displayA11yResults(data) {
   table.innerHTML = `
     <thead>
       <tr>
-        <th scope="col">Issue</th>
+        <th scope="col">Issue Type</th>
         <th scope="col">Severity</th>
         <th scope="col">Count</th>
-        <th scope="col">Suggestion</th>
-        <th scope="col">Examples (Selectors)</th>
+        <th scope="col">How to Fix</th>
+        <th scope="col">Examples</th>
       </tr>
     </thead>
-    <tbody>
+    <tbody></tbody>
   `;
+
+  const tbody = table.querySelector("tbody");
 
   data.results.forEach((group) => {
     const row = document.createElement("tr");
     row.className = `severity-${group.severity}`;
+
+    // Create examples list with better formatting
     const examplesList = group.examples
+      .slice(0, 5) // Limit to 5 examples for better UX
       .map((ex) => {
-        let displaySelector = ex.selector;
-        if (displaySelector.includes("http")) {
-          try {
-            const url = new URL(displaySelector.replace(/^a /, ""));
-            displaySelector = `${url.hostname}${url.pathname.substring(
-              0,
-              20
-            )}...`;
-          } catch (e) {}
+        let displayText = ex.selector;
+
+        // Shorten long selectors for display
+        if (displayText.length > 50) {
+          displayText = displayText.substring(0, 47) + "...";
         }
-        return `<li title="${ex.selector}">${displaySelector}</li>`;
+
+        return `<li title="${escapeHtml(
+          ex.selector
+        )}" class="example-item">${escapeHtml(displayText)}</li>`;
       })
       .join("");
 
     row.innerHTML = `
-      <td>${group.display}</td>
-      <td>${group.severity.toUpperCase()}</td>
-      <td>${group.count}</td>
-      <td>${group.suggestion}</td>
-      <td><ul>${examplesList}</ul></td>
+      <td class="issue-type">${escapeHtml(group.display)}</td>
+      <td class="severity-cell">
+        <span class="severity-badge severity-${
+          group.severity
+        }">${group.severity.toUpperCase()}</span>
+      </td>
+      <td class="count-cell">${group.count}</td>
+      <td class="suggestion-cell">${escapeHtml(group.suggestion)}</td>
+      <td class="examples-cell">
+        <ul class="examples-list">${examplesList}</ul>
+        ${
+          group.examples.length > 5
+            ? `<small>... and ${group.examples.length - 5} more</small>`
+            : ""
+        }
+      </td>
     `;
-    table.querySelector("tbody").appendChild(row);
+    tbody.appendChild(row);
   });
 
   container.appendChild(table);
@@ -210,22 +285,70 @@ function displayA11yResults(data) {
 
   // Copy button
   const copyBtn = document.createElement("button");
-  copyBtn.textContent = "Copy Results to Clipboard";
-  copyBtn.addEventListener("click", () => {
-    const text = JSON.stringify(data, null, 2); // Or format as Markdown
-    navigator.clipboard.writeText(text).then(() => alert("Copied!"));
+  copyBtn.textContent = "Copy Results";
+  copyBtn.className = "action-btn copy-btn";
+  copyBtn.addEventListener("click", async () => {
+    try {
+      const textResults = formatResultsAsText(data);
+      await navigator.clipboard.writeText(textResults);
+      copyBtn.textContent = "✓ Copied!";
+      setTimeout(() => {
+        copyBtn.textContent = "Copy Results";
+      }, 2000);
+    } catch (err) {
+      console.error("Failed to copy:", err);
+      copyBtn.textContent = "Copy failed";
+      setTimeout(() => {
+        copyBtn.textContent = "Copy Results";
+      }, 2000);
+    }
   });
   buttonContainer.appendChild(copyBtn);
 
   // Hide button
   const hideBtn = document.createElement("button");
   hideBtn.textContent = "Hide Results";
+  hideBtn.className = "action-btn hide-btn";
   hideBtn.addEventListener("click", () => {
-    container.innerHTML = ""; // Reset to initial state (empty)
+    container.innerHTML = "";
   });
   buttonContainer.appendChild(hideBtn);
 
+  // Rescan button
+  const rescanBtn = document.createElement("button");
+  rescanBtn.textContent = "Scan Again";
+  rescanBtn.className = "action-btn rescan-btn";
+  rescanBtn.addEventListener("click", () => {
+    document.getElementById("scanA11yBtn").click();
+  });
+  buttonContainer.appendChild(rescanBtn);
+
   container.appendChild(buttonContainer);
+}
+
+// Helper function to format results as readable text
+function formatResultsAsText(data) {
+  let text = "Accessibility Scan Results\n";
+  text += "==========================\n\n";
+  text += `Total Issues: ${data.summary.totalIssues}\n`;
+  text += `High Severity: ${data.summary.highCount || 0}\n`;
+  text += `Medium Severity: ${data.summary.mediumCount || 0}\n`;
+  text += `Low Severity: ${data.summary.lowCount || 0}\n\n`;
+
+  data.results.forEach((group, index) => {
+    text += `${index + 1}. ${
+      group.display
+    } (${group.severity.toUpperCase()})\n`;
+    text += `   Count: ${group.count}\n`;
+    text += `   Fix: ${group.suggestion}\n`;
+    text += `   Examples:\n`;
+    group.examples.slice(0, 3).forEach((ex) => {
+      text += `   - ${ex.selector}\n`;
+    });
+    text += "\n";
+  });
+
+  return text;
 }
 
 async function isInjectableUrl(url) {
@@ -234,7 +357,10 @@ async function isInjectableUrl(url) {
     url.startsWith("chrome://") ||
     url.startsWith("about:") ||
     url.startsWith("chrome-extension://") ||
-    url.includes("chrome.google.com/webstore")
+    url.startsWith("moz-extension://") ||
+    url.startsWith("edge-extension://") ||
+    url.includes("chrome.google.com/webstore") ||
+    url.includes("addons.mozilla.org")
   ) {
     return false;
   }
@@ -259,7 +385,6 @@ async function runScanFromPopup() {
     return;
   }
 
-  // Use callback form and check chrome.runtime.lastError to avoid uncaught promise
   chrome.tabs.sendMessage(tab.id, { action: "scan" }, (response) => {
     if (chrome.runtime.lastError) {
       console.warn(
@@ -296,7 +421,6 @@ function addBookmark(selector) {
   const s = (selector || "").trim();
   if (!s) return;
   getBookmarks((list) => {
-    // avoid exact duplicates
     if (list.some((b) => b.selector === s)) return;
     const entry = {
       id: _uid(),
@@ -326,12 +450,10 @@ function useBookmark(id) {
     const b = list[idx];
     b.useCount = (b.useCount || 0) + 1;
     b.lastUsed = Date.now();
-    // move to front to reflect recent use
     list.splice(idx, 1);
     list.unshift(b);
     setBookmarks(list, () => {
       renderBookmarks();
-      // Trigger actual selector use in pages
       chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         const tab = tabs && tabs[0];
         if (!tab) return;
@@ -396,7 +518,6 @@ function importBookmarksFile(file) {
       if (!Array.isArray(imported)) throw new Error("Invalid format");
       getBookmarks((existing) => {
         const map = new Map();
-        // prefer existing metadata when selectors match
         existing.forEach((b) => map.set(b.selector, b));
         imported.forEach((b) => {
           const key = (b.selector || "").trim();
@@ -451,7 +572,6 @@ function renderBookmarks() {
       listEl.appendChild(li);
     });
 
-    // Attach event listeners (delegation would be fine too)
     listEl.querySelectorAll(".use-btn").forEach((btn) => {
       btn.addEventListener("click", (e) => {
         const id = e.currentTarget.dataset.id;
@@ -481,10 +601,8 @@ function escapeHtml(str) {
   });
 }
 
-// Wire bookmark UI controls after DOM is ready. We keep this separate from the
-// main DOMContentLoaded handler above so the file changes are smaller and clear.
+// Wire bookmark UI controls after DOM is ready
 document.addEventListener("DOMContentLoaded", () => {
-  // Render existing bookmarks
   renderBookmarks();
 
   const saveBtn = document.getElementById("saveSelectorBtn");
@@ -498,7 +616,6 @@ document.addEventListener("DOMContentLoaded", () => {
       addBookmark(selectorInput.value || "");
       selectorInput.value = "";
     });
-    // allow Enter key to save
     selectorInput.addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
         e.preventDefault();
@@ -514,7 +631,6 @@ document.addEventListener("DOMContentLoaded", () => {
     importFileInput.addEventListener("change", (e) => {
       const f = e.target.files && e.target.files[0];
       if (f) importBookmarksFile(f);
-      // reset input so same file can be selected again if needed
       importFileInput.value = "";
     });
   }

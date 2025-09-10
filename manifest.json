@@ -23,8 +23,7 @@
         "<all_urls>"
       ],
       "js": [
-        "content.js",
-        "a11y.js"
+        "content.js"
       ],
       "run_at": "document_end",
       "all_frames": true
