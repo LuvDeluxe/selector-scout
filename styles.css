@@ -384,6 +384,30 @@ body.dark-mode .results-table tr.severity-medium {
   font-size: 13px;
 }
 
+/* Make example selectors visually interactive and provide copied feedback */
+.examples-list .example-item {
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 4px;
+  display: inline-block;
+  margin: 2px 0;
+  transition: background-color 0.18s ease, color 0.18s ease,
+    transform 0.08s ease;
+}
+
+.examples-list .example-item:hover {
+  background-color: #f1f8ff;
+  color: #0366d6;
+  transform: translateY(-1px);
+}
+
+/* Temporary confirmation state after copying */
+.examples-list .example-item.copied {
+  background-color: #e6ffed !important;
+  color: #0b6623 !important;
+  font-weight: 700;
+}
+
 .button-container {
   display: flex;
   justify-content: left;

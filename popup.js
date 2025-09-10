@@ -252,7 +252,9 @@ function displayA11yResults(data) {
 
         return `<li title="${escapeHtml(
           ex.selector
-        )}" class="example-item">${escapeHtml(displayText)}</li>`;
+        )}" class="example-item" data-full-selector="${escapeHtml(
+          ex.selector
+        )}">${escapeHtml(displayText)}</li>`;
       })
       .join("");
 
@@ -324,6 +326,37 @@ function displayA11yResults(data) {
   buttonContainer.appendChild(rescanBtn);
 
   container.appendChild(buttonContainer);
+
+  // Attach click-to-copy behavior for example selectors
+  const exampleItems = container.querySelectorAll(".example-item");
+  exampleItems.forEach((el) => {
+    el.addEventListener("click", async (ev) => {
+      const target = ev.currentTarget;
+      const full =
+        target.getAttribute("data-full-selector") || target.textContent;
+      try {
+        await navigator.clipboard.writeText(full);
+
+        // show temporary visual feedback using CSS class
+        const originalText = target.textContent;
+        target.textContent = "Copied!";
+        target.classList.add("copied");
+
+        setTimeout(() => {
+          target.textContent = originalText;
+          target.classList.remove("copied");
+        }, 1000);
+      } catch (err) {
+        console.error("Copy failed", err);
+        // fallback: briefly show error
+        const originalText = target.textContent;
+        target.textContent = "Copy failed";
+        setTimeout(() => {
+          target.textContent = originalText;
+        }, 1200);
+      }
+    });
+  });
 }
 
 // Helper function to format results as readable text
