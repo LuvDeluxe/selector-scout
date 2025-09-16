@@ -355,8 +355,11 @@ function generateCypressAssertions(el) {
   const tagName = el.tagName.toLowerCase();
 
   let suggestions = [
-    { display: `.should('be.visible')`, code: `${base}.should('be.visible');` },
-    { display: `.should('exist')`, code: `${base}.should('exist');` },
+    {
+      display: `${base}.should('be.visible');`,
+      code: `${base}.should('be.visible');`,
+    },
+    { display: `${base}.should('exist');`, code: `${base}.should('exist');` },
   ];
 
   if (tagName === "a" && el.hasAttribute("href")) {
@@ -371,7 +374,7 @@ function generateCypressAssertions(el) {
   if (el.textContent && el.textContent.trim()) {
     const text = el.textContent.trim().substring(0, 30);
     suggestions.push({
-      display: `.should('contain', '${text}...')`,
+      display: `${base}.should('contain', '${text}...');`,
       code: `${base}.should('contain', '${el.textContent.trim()}');`,
     });
   }
@@ -383,7 +386,7 @@ function generateCypressAssertions(el) {
     });
     if (el.value) {
       suggestions.push({
-        display: `.should('have.value', ...)`,
+        display: `${base}.should('have.value', '${el.value}');`,
         code: `${base}.should('have.value', '${el.value}');`,
       });
     }
@@ -391,11 +394,11 @@ function generateCypressAssertions(el) {
 
   if (el.disabled) {
     suggestions.push({
-      display: `.should('be.disabled')`,
+      display: `${base}.should('be.disabled');`,
       code: `${base}.should('be.disabled');`,
     });
   } else {
-    suggestions.push({ display: `.click()`, code: `${base}.click();` });
+    suggestions.push({ display: `${base}.click();`, code: `${base}.click();` });
   }
 
   return suggestions;
@@ -648,43 +651,69 @@ function showModal(title, items) {
     }
   });
 
-  modal.innerHTML = `
-    <div class="ssm-overlay"></div>
-    <div class="ssm-content">
-        <div class="ssm-header">
-            <h3>${escapeHTML(title)}</h3>
-            <button id="ssm-close">&times;</button>
-        </div>
-        <div class="ssm-body">
-            <ul>
-                ${items
-                  .map(
-                    (item) =>
-                      `<li data-code="${escapeHTML(item.code)}">${escapeHTML(
-                        item.display
-                      )}</li>`
-                  )
-                  .join("")}
-            </ul>
-        </div>
-    </div>
-  `;
+  // Build modal content using DOM APIs to avoid HTML-attribute escaping issues
+  const overlay = document.createElement("div");
+  overlay.className = "ssm-overlay";
+
+  const content = document.createElement("div");
+  content.className = "ssm-content";
+
+  const header = document.createElement("div");
+  header.className = "ssm-header";
+
+  const h3 = document.createElement("h3");
+  h3.textContent = title;
+
+  const closeBtn = document.createElement("button");
+  closeBtn.id = "ssm-close";
+  closeBtn.innerHTML = "&times;";
+
+  header.appendChild(h3);
+  header.appendChild(closeBtn);
+
+  const body = document.createElement("div");
+  body.className = "ssm-body";
+
+  const ul = document.createElement("ul");
+
+  items.forEach((item, index) => {
+    const li = document.createElement("li");
+    // Use textContent so special characters are preserved visually and safely
+    li.textContent = item.display;
+    // Store the code in dataset to avoid quoting/escaping issues in HTML
+    try {
+      li.dataset.code =
+        typeof item.code === "string" ? item.code : String(item.code);
+    } catch (e) {
+      // Fallback if dataset assignment fails for any reason
+      li.setAttribute(
+        "data-code",
+        typeof item.code === "string" ? item.code : String(item.code)
+      );
+    }
+
+    li.addEventListener("click", () => {
+      // Prefer using stored dataset to copy exact code
+      const codeToCopy = li.dataset.code || item.code || "";
+      copyToClipboard(codeToCopy);
+      modal.remove();
+    });
+
+    ul.appendChild(li);
+  });
+
+  body.appendChild(ul);
+
+  content.appendChild(header);
+  content.appendChild(body);
+
+  modal.appendChild(overlay);
+  modal.appendChild(content);
 
   document.body.appendChild(modal);
 
-  modal
-    .querySelector("#ssm-close")
-    .addEventListener("click", () => modal.remove());
-  modal
-    .querySelector(".ssm-overlay")
-    .addEventListener("click", () => modal.remove());
-  modal.querySelectorAll(".ssm-body li").forEach((li, index) => {
-    li.addEventListener("click", () => {
-      const item = items[index];
-      copyToClipboard(item.code);
-      modal.remove();
-    });
-  });
+  closeBtn.addEventListener("click", () => modal.remove());
+  overlay.addEventListener("click", () => modal.remove());
 }
 
 function getCssSelector(el) {
