@@ -4,6 +4,8 @@
 ![selectors](https://github.com/user-attachments/assets/93826e6b-fa30-4cc6-af68-beeabdf95d5e)
 ![playwright](https://github.com/user-attachments/assets/b328012b-f992-4c0c-af47-03e817f856a2)
 ![accesibility](https://github.com/user-attachments/assets/6202f2ac-f5fd-4f92-a67a-98cd8f3bda58)
+![saving-a-snippet](https://github.com/user-attachments/assets/d01400e5-8663-48b3-b5eb-b0cbc31b7b98)
+
 
 A Chrome extension to help QA engineers and developers generate robust CSS selectors and test snippets, inspect element attributes, and run quick accessibility checks.
 
